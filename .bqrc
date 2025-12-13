@@ -1,0 +1,899 @@
+#!/usr/bin/env bq
+############################################################################
+# ~/.bqrc – BLUX Quantum Shell Configuration
+# BLUX10K Distributed System - Terminal Interface
+# This file replaces ~/.zshrc and creates bq shell environment
+############################################################################
+
+############################################################################
+# BLUX QUANTUM SHELL HEADER
+############################################################################
+print_blux_header() {
+    echo ""
+    echo "            ░█▀▄░█░░░█░█░█░█ ░█▀▀░█▀▀░█▀█░█▀▀░█░█░█▀▀░▀█▀░█▀▀░█▄█            "
+    echo "            ░█▀▄░█░░░█░█░▄▀▄ ░█▀▀░█░░░█░█░▀▀█░░█░░▀▀█░░█░░█▀▀░█░█            "
+    echo "            ░▀▀░░▀▀▀░▀▀▀░▀░▀░ ▀▀▀░▀▀▀░▀▀▀░▀▀▀░░▀░░▀▀▀░░▀░░▀▀▀░▀░▀            "
+    echo ""
+    echo "  █▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█"
+    echo "  █                                                                          █"
+    echo "  █  >> BLUX QUANTUM SHELL ONLINE                                          █"
+    echo "  █  >> INTERFACE: bq v2.0.0                                              █"
+    echo "  █  >> SYSTEM TIME: $(date +"%H:%M:%S UTC")                                 █"
+    echo "  █  >> READY FOR QUANTUM COMMANDS                                        █"
+    echo "  █                                                                          █"
+    echo "  █▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄█"
+    echo "                BLUX Ecosystem: https://github.com/Outer-Void                "
+    echo "                Developer: https://github.com/Justadudeinspace               "
+    echo "                                                                                "
+}
+
+############################################################################
+# BQ SHELL DETECTION AND FALLBACK
+############################################################################
+# If not running in bq shell, fall back to zsh but source this config
+if [[ "$(basename "$SHELL")" != "bq" ]]; then
+    # We're in zsh but want bq environment - source this file and continue
+    if [[ -n "$ZSH_VERSION" ]]; then
+        # Set flag to indicate we're running bq environment in zsh
+        export BQ_MODE="zsh_compat"
+    fi
+fi
+
+############################################################################
+# 1) PERFORMANCE & COMPATIBILITY
+############################################################################
+typeset -g ZSH_DISABLE_COMPFIX=true
+
+# Enable Powerlevel10k instant prompt - MUST BE AT THE VERY TOP
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+############################################################################
+# 2) PLUGIN MANAGERS SETUP - SIMPLIFIED TO AVOID CONFLICTS
+############################################################################
+
+# A) Zplug - Primary plugin manager
+if [[ ! -d ~/.zplug ]]; then
+    git clone https://github.com/zplug/zplug ~/.zplug
+fi
+source ~/.zplug/init.zsh
+
+# D) Znap - For prompt and async loading
+[[ -r ~/Repos/znap/znap.zsh ]] || 
+    git clone --depth 1 -- https://github.com/marlonrichert/zsh-snap.git ~/Repos/znap
+source ~/Repos/znap/znap.zsh
+
+############################################################################
+# 3) ZPLUG PLUGINS - STREAMLINED
+############################################################################
+
+# Core essential plugins only
+zplug "zsh-users/zsh-syntax-highlighting", defer:2
+zplug "zsh-users/zsh-autosuggestions"
+zplug "zsh-users/zsh-history-substring-search"
+zplug "zsh-users/zsh-completions"
+zplug "agkozak/zsh-z"
+
+# Oh My Zsh plugins
+zplug "plugins/git", from:oh-my-zsh
+zplug "plugins/command-not-found", from:oh-my-zsh
+zplug "plugins/colored-man-pages", from:oh-my-zsh
+zplug "plugins/sudo", from:oh-my-zsh
+
+# Theme - Powerlevel10k (recommended)
+zplug "romkatv/powerlevel10k", as:theme, depth:1
+
+# Utility plugins
+zplug "MichaelAquilina/zsh-autoswitch-virtualenv"
+zplug "hlissner/zsh-autopair", defer:2
+zplug "Aloxaf/fzf-tab"
+
+# Install plugins if needed
+if ! zplug check --verbose; then
+    printf "Install missing plugins? [y/N]: "
+    if read -q; then
+        echo; zplug install
+    fi
+fi
+
+# Then load them
+zplug load
+
+############################################################################
+# 4) ZNAP SETUP - FOR ASYNC LOADING
+############################################################################
+
+# Use znap for specific async functionality
+znap source marlonrichert/zsh-autocomplete
+znap function _pyenv pyenv "znap eval pyenv 'pyenv init - --no-rehash'"
+compctl -K _pyenv pyenv
+
+############################################################################
+# 5) ENVIRONMENT & PATH SETUP
+############################################################################
+
+# XDG base dirs
+: ${XDG_CONFIG_HOME:=$HOME/.config}
+: ${XDG_CACHE_HOME:=$HOME/.cache}
+: ${XDG_STATE_HOME:=$HOME/.local/state}
+mkdir -p "$XDG_CACHE_HOME/zsh" "$XDG_STATE_HOME/zsh" 2>/dev/null
+
+# Ruby gems config
+[[ ! -f ~/.gemrc ]] && echo "gem: --no-document" > ~/.gemrc
+
+# History configuration
+export HISTFILE="${XDG_STATE_HOME}/zsh/history-$(date +%Y-%m)"
+export HISTSIZE=100000
+export SAVEHIST=100000
+setopt INC_APPEND_HISTORY_TIME
+setopt SHARE_HISTORY
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_REDUCE_BLANKS
+setopt HIST_IGNORE_SPACE
+setopt EXTENDED_HISTORY
+
+# Shell behaviour
+setopt PROMPT_SUBST
+setopt INTERACTIVE_COMMENTS
+setopt AUTO_CD
+setopt EXTENDED_GLOB
+setopt NO_BEEP
+setopt NOTIFY
+
+# TTY-only options
+if [[ -t 0 ]]; then
+  setopt CORRECT
+  setopt CORRECT_ALL
+  bindkey -e  # Emacs keybindings
+fi
+
+SPROMPT='zsh: correct '\''%R'\'' to '\''%r'\''? [Yes, No, Abort, Edit] '
+
+# PATH dedup + Windows extras
+typeset -U path
+export PNPM_HOME="$HOME/.local/share/pnpm"
+export VOLTA_HOME="$HOME/.volta"
+
+path=(
+    "$HOME/.local/bin"
+    "$HOME/bin"
+    "$HOME/.cargo/bin"
+    "$HOME/.npm-global/bin"
+    "$PNPM_HOME"
+    "$VOLTA_HOME/bin"
+    "$HOME/.local/share/gem/ruby/3.0.0/bin"
+    "$HOME/Scripts"
+    "$HOME/dev/tools/flutter/bin"
+    "$HOME/.turso"
+    "/usr/local/sbin"
+    "/usr/local/bin"
+    "/usr/sbin"
+    "/usr/bin"
+    "/sbin"
+    "/bin"
+    $path
+)
+
+# Windows additions
+[[ -d /mingw64/bin ]] && path+=( /mingw64/bin )
+[[ -d "/c/Program Files/Docker/Docker/resources/bin" ]] && path+=( "/c/Program Files/Docker/Docker/resources/bin" )
+
+export PATH
+
+# Platform detection
+WSL=0
+[[ -f /proc/version ]] && grep -qi microsoft /proc/version && WSL=1
+export WSL
+
+# Termux detection
+TERMUX=0
+[[ -d "/data/data/com.termux" ]] && TERMUX=1
+export TERMUX
+
+# macOS detection
+MACOS=0
+[[ "$(uname)" == "Darwin" ]] && MACOS=1
+export MACOS
+
+# True-color auto-detection
+if [[ "$COLORTERM" == "truecolor" || "$TERM" == *256* ]]; then
+    export TERM=xterm-256color
+    export BAT_THEME=TwoDark
+fi
+
+############################################################################
+# 6) PLUGIN CONFIGURATIONS
+############################################################################
+
+# Powerlevel10k - must be at the end for prompt systems
+[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
+
+# zsh-autosuggestions
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=8'
+ZSH_AUTOSUGGEST_STRATEGY=(history completion)
+ZSH_AUTOSUGGEST_USE_ASYNC=1
+ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
+
+# zsh-syntax-highlighting
+ZSH_HIGHLIGHT_HIGHLIGHTERS=(main brackets pattern)
+ZSH_HIGHLIGHT_STYLES[default]=none
+ZSH_HIGHLIGHT_STYLES[unknown-token]=fg=red
+ZSH_HIGHLIGHT_STYLES[reserved-word]=fg=cyan,bold
+ZSH_HIGHLIGHT_STYLES[command]=fg=green
+ZSH_HIGHLIGHT_STYLES[precommand]=fg=green,underline
+ZSH_HIGHLIGHT_STYLES[path]=bold
+ZSH_HIGHLIGHT_STYLES[globbing]=fg=blue,bold
+
+# zsh-autoswitch-virtualenv
+AUTOSWITCH_VIRTUAL_ENV_DIR="venv"
+AUTOSWITCH_VIRTUAL_ENV_DIR_EXTRA=".venv"
+AUTOSWITCH_SILENT=1
+
+# zsh-z
+ZSHZ_CMD="z"
+ZSHZ_CASE="smart"
+ZSHZ_UNCOMMON=1
+
+# nvm setup
+export NVM_DIR="$HOME/.nvm"
+[[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
+
+# zoxide
+eval "$(zoxide init zsh)"
+
+############################################################################
+# 7) FZF + FD CONFIGURATION
+############################################################################
+export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
+if [[ "$COLORTERM" == "truecolor" || "$TERM" == *256* ]]; then
+    export FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --color=16,bg+:238,preview-bg:235"
+fi
+
+if command -v fd >/dev/null 2>&1; then
+    export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+    export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+elif command -v fdfind >/dev/null 2>&1; then
+    alias fd='fdfind'
+    export FZF_DEFAULT_COMMAND='fdfind --type f --hidden --follow --exclude .git'
+    export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+fi
+
+############################################################################
+# 8) ALIASES
+############################################################################
+
+# Listing commands
+if command -v eza >/dev/null 2>&1; then
+    alias ls='eza --group-directories-first --icons'
+    alias ll='eza -lh --group-directories-first --icons'
+    alias la='eza -lha --group-directories-first --icons'
+    alias tree='eza --tree'
+else
+    alias ls='ls --color=auto -F'
+    alias ll='ls -lh --color=auto'
+    alias la='ls -lha --color=auto'
+fi
+
+alias l='ls'
+
+# Navigation
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias .....='cd ../../../..'
+
+# Safety aliases
+alias cp='cp -iv --reflink=auto'
+alias mv='mv -iv'
+alias rm='rm -Iv'
+alias mkdir='mkdir -pv'
+
+# Utility aliases
+alias grep='grep --color=auto'
+alias df='df -h'
+alias du='du -h'
+alias wget='wget -c'
+alias ports='ss -tulpn 2>/dev/null || netstat -tulpn'
+
+# Python aliases
+alias serve='python3 -m http.server 8080'
+alias json='python3 -m json.tool'
+alias pyhttp='python3 -m http.server'
+
+# Editor aliases
+alias vi='nvim'
+alias vim='nvim'
+alias svi='sudo nvim'
+
+# Directory aliases
+alias bd='cd "$OLDPWD"'
+alias home='cd ~'
+alias cd..='cd ..'
+
+# System aliases (Debian/Ubuntu specific)
+if command -v apt >/dev/null 2>&1; then
+    alias fix-all='sudo apt --fix-broken install'
+    alias arem='sudo apt autoremove -y'
+    alias sys-up="sudo apt update && sudo apt full-upgrade -y"
+    alias dist-up="sudo apt update && sudo apt dist-upgrade -y"
+fi
+
+# Modern tool aliases
+if command -v bat >/dev/null 2>&1; then
+    alias cat='bat --paging=never'
+elif command -v batcat >/dev/null 2>&1; then
+    alias bat='batcat'
+    alias cat='batcat --paging=never'
+fi
+
+# Web search aliases (if web-search plugin is loaded)
+alias google='web_search google' 2>/dev/null || true
+alias ddg='web_search duckduckgo' 2>/dev/null || true
+alias github='web_search github' 2>/dev/null || true
+alias stackoverflow='web_search stackoverflow' 2>/dev/null || true
+
+# Git aliases (extended)
+alias gst='git status'
+alias gd='git diff'
+alias gl='git log --oneline --graph --decorate'
+alias ga='git add'
+alias gc='git commit'
+alias gp='git push'
+alias gco='git checkout'
+
+############################################################################
+# 9) USEFUL FUNCTIONS
+############################################################################
+
+mkcd() { mkdir -p "$1" && cd "$1"; }
+bk() { cp -f "$1" "$1.bak"; }
+ff() { find . -type f -iname "*$1*" 2>/dev/null; }
+hist() { (( $# )) && history | grep -- "$*" || history; }
+
+extract() {
+    if [[ -z "$1" ]]; then
+        echo "Usage: extract <file>"
+        return 1
+    fi
+    
+    if [[ ! -f "$1" ]]; then
+        echo "File not found: $1"
+        return 1
+    fi
+    
+    case "$1" in
+        *.tar.bz2|*.tbz2) tar xjf "$1" ;;
+        *.tar.gz|*.tgz)   tar xzf "$1" ;;
+        *.tar.xz)         tar xJf "$1" ;;
+        *.bz2)            bunzip2 "$1" ;;
+        *.rar)            unrar x "$1" ;;
+        *.gz)             gunzip "$1" ;;
+        *.tar)            tar xf "$1" ;;
+        *.zip)            unzip "$1" ;;
+        *.Z)              uncompress "$1" ;;
+        *.7z)             7z x "$1" ;;
+        *.xz)             unxz "$1" ;;
+        *.lzma)           unlzma "$1" ;;
+        *)                echo "Cannot extract '$1': unknown format" && return 1 ;;
+    esac
+}
+
+killport() {
+    local port="$1"
+    if [[ -z "$port" ]]; then
+        echo "Usage: killport <port>"
+        return 1
+    fi
+    
+    local pid
+    if command -v lsof >/dev/null 2>&1; then
+        pid=$(lsof -ti:"$port")
+    elif command -v netstat >/dev/null 2>&1; then
+        pid=$(netstat -tulpn 2>/dev/null | awk -v port=":$port" '$4 ~ port {split($7, a, "/"); print a[1]}' | head -1)
+    else
+        echo "Neither lsof nor netstat found"
+        return 1
+    fi
+    
+    if [[ -n "$pid" ]]; then
+        kill -9 "$pid"
+        echo "Killed process $pid on port $port"
+    else
+        echo "No process found on port $port"
+    fi
+}
+
+# GitHub functions
+bq_gc() { git add . && git commit -m "$1"; }
+bq_lg() { git add . && git commit -m "$1" && git push; }
+
+############################################################################
+# 10) KEYBINDINGS
+############################################################################
+
+# History substring search keybindings
+bindkey '^[[A' history-substring-search-up
+bindkey '^[[B' history-substring-search-down
+bindkey '^P' history-substring-search-up
+bindkey '^N' history-substring-search-down
+
+# Better menuselect
+bindkey -M menuselect '^M' .accept-line
+
+# Reduce beeping
+setopt NO_LIST_BEEP
+
+# zoxide interactive
+zoxide_i() {
+    local result
+    result="$(zoxide query -i)"
+    if [[ -n "$result" ]]; then
+        cd "$result"
+        local precmd
+        for precmd in $precmd_functions; do
+            $precmd
+        done
+        zle reset-prompt
+    fi
+}
+zle -N zoxide_i
+bindkey '^f' zoxide_i
+
+############################################################################
+# 11) SYSTEM CONFIGURATION
+############################################################################
+
+# SSH-Agent auto-start
+if [[ -z "$SSH_AUTH_SOCK" ]] && command -v ssh-agent >/dev/null; then
+    eval "$(ssh-agent -s)" >/dev/null
+    # Add common SSH keys
+    for key in ~/.ssh/id_ed25519 ~/.ssh/id_rsa ~/.ssh/id_ecdsa; do
+        [[ -f "$key" ]] && ssh-add "$key" 2>/dev/null
+    done
+fi
+
+# GPG TTY
+export GPG_TTY=$TTY
+
+# Docker / Podman env
+export DOCKER_BUILDKIT=1
+export BUILDKIT_PROGRESS=plain
+export PODMAN_USERNS=keep-id
+
+############################################################################
+# 12) BLUX QUANTUM CORE SYSTEM
+############################################################################
+
+_bq_err() { print -P "%F{red}[bq]%f $*"; return 1 }
+_bq_ok()  { print -P "%F{green}[bq]%f $*"; }
+
+# bq CLI: subcommands = dat / df / dscan / dsn-lrc / dsn-rpt / mscan
+bq() {
+  local cmd="$1"; shift 2>/dev/null || true
+
+  case "$cmd" in
+    # Pass-through to dat (keeps filename 'dat' intact)
+    dat)
+      if ! command -v dat >/dev/null 2>&1; then _bq_err "dat not found"; return 127; fi
+      dat "$@"
+      ;;
+
+    # Format/export helper → `dat -f <folder> -o <outfile>`
+    df)
+      if ! command -v dat >/dev/null 2>&1; then _bq_err "dat not found"; return 127; fi
+
+      local folder="."
+      local repo_name="$(basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)")"
+      local default_out="outputs/dat_${repo_name}.md"
+      local out="$default_out"
+      local opt
+      
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          -f|--folder) folder="$2"; shift 2 ;;
+          -o|--out|--output) out="$2"; shift 2 ;;
+          *) opt="$1"; shift ;;
+        esac
+      done
+
+      mkdir -p "outputs" 2>/dev/null || true
+
+      # support comma-separated outputs: a.md,a.txt,a.pdf
+      if [[ "$out" == *,* ]]; then
+        local item
+        local IFS=,
+        for item in $out; do
+          item="${item//[[:space:]]/}"
+          [[ -z "$item" ]] && continue
+          _bq_ok "dat -f \"$folder\" -o \"$item\""
+          dat -f "$folder" -o "$item" || return $?
+        done
+      else
+        _bq_ok "dat -f \"$folder\" -o \"$out\""
+        dat -f "$folder" -o "$out" || return $?
+      fi
+      ;;
+
+    # Triage with default dat rules
+    dscan)
+      if ! command -v dat-scan >/dev/null 2>&1; then _bq_err "dat-scan not found"; return 127; fi
+      local rules="${DATSCAN_HOME:-$HOME/dev/dat-scan}/rules/dat.json"
+      dat-scan ./outputs/dat_latest.jsonl --rules "$rules"
+      ;;
+
+    # LRC-focused rules
+    dsn-lrc)
+      if ! command -v dat-scan >/dev/null 2>&1; then _bq_err "dat-scan not found"; return 127; fi
+      local rules="${DATSCAN_HOME:-$HOME/dev/dat-scan}/rules/lrc.json"
+      dat-scan ./outputs/dat_latest.jsonl --rules "$rules"
+      ;;
+
+    # HTML report
+    dsn-rpt)
+      if ! command -v dat-scan-report >/dev/null 2>&1; then _bq_err "dat-scan-report not found"; return 127; fi
+      mkdir -p ./reports 2>/dev/null || true
+      dat-scan-report ./outputs/dat_latest.jsonl ./reports/report.html \
+        && _bq_ok "Report → ./reports/report.html"
+      ;;
+
+    # Monster scan battery then triage (keeps 'monster-scan' filename)
+    mscan)
+      if ! command -v monster-scan >/dev/null 2>&1; then _bq_err "monster-scan not found"; return 127; fi
+      local root="${1:-$PWD}"
+      local out="$root/outputs/dat_latest.jsonl"
+      local rules="${DATSCAN_HOME:-$HOME/dev/dat-scan}/rules/dat.json"
+      mkdir -p "$root/outputs" 2>/dev/null || true
+      monster-scan "$root" "$out" && dat-scan "$out" --rules "$rules"
+      ;;
+
+    # Enhanced monster scan with repo-aware output naming
+    mscan-repo)
+      if ! command -v monster-scan >/dev/null 2>&1; then _bq_err "monster-scan not found"; return 127; fi
+      local root="${1:-$PWD}"
+      local repo_name="$(basename "$(git rev-parse --show-toplevel 2>/dev/null || echo "$root")")"
+      local timestamp="$(date +%Y%m%d_%H%M%S)"
+      local out="$root/outputs/dat_${repo_name}_${timestamp}.jsonl"
+      local rules="${DATSCAN_HOME:-$HOME/dev/dat-scan}/rules/dat.json"
+      mkdir -p "$root/outputs" 2>/dev/null || true
+      _bq_ok "Monster scanning $repo_name → $out"
+      monster-scan "$root" "$out" && dat-scan "$out" --rules "$rules"
+      ;;
+
+    # Quick scan current git repo
+    scan-repo)
+      local repo_root="$(git rev-parse --show-toplevel 2>/dev/null)"
+      if [[ -z "$repo_root" ]]; then
+        _bq_err "Not in a git repository"
+        return 1
+      fi
+      bq mscan-repo "$repo_root"
+      ;;
+
+    # Stubs you can wire later without renaming the real tools
+    lrc)
+      _bq_err "lrc not wired yet. (Keep filename 'lrc' when you add it.)"
+      ;;
+
+    guard)
+      _bq_err "BLUX Guard not wired yet. (Keep filename structure when ready.)"
+      ;;
+
+    ca)
+      _bq_err "BLUX Conscious Agent not wired yet."
+      ;;
+
+    quantum)
+      _bq_err "BLUX Quantum core not wired yet."
+      ;;
+
+    dat*)
+      # convenience: let 'bq dat-anything' pass straight through to dat
+      if ! command -v dat >/dev/null 2>&1; then _bq_err "dat not found"; return 127; fi
+      dat "$cmd" "$@"
+      ;;
+
+    shell)
+      # bq shell - Switch to bq shell environment
+      _setup_bq_shell
+      ;;
+
+    ""|help|-h|--help)
+      echo ""
+      echo "╔════════════════════════════════════════════════════════════════╗"
+      echo "║                   BLUX QUANTUM COMMAND SYSTEM                  ║"
+      echo "║                     bq - Unified Tool Interface                ║"
+      echo "╚════════════════════════════════════════════════════════════════╝"
+      echo ""
+      
+      echo "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬ DATA ACQUISITION ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+      echo "  bq dat [args...]              # Pass-through to dat tool"
+      echo "  bq df [-f DIR] [-o OUT]       # Export to dat_\$REPO_NAME.md"
+      echo "  bq mscan [PATH]               # Full monster scan + triage"
+      echo "  bq mscan-repo [PATH]          # Repo-aware scan with timestamp"
+      echo "  bq scan-repo                  # Quick scan current git repo"
+      echo ""
+      
+      echo "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬ ANALYSIS & TRIAGE ▬▬▬▬▬▬▬▬▬▬▬▬▬"
+      echo "  bq dscan                      # Triage with dat rules"
+      echo "  bq dsn-lrc                    # Triage with LRC rules"
+      echo "  bq dsn-rpt                    # Generate HTML report"
+      echo ""
+      
+      echo "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬ BLUX ECOSYSTEM ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+      echo "  bq lrc                        # Local Repo Compiler (stub)"
+      echo "  bq guard                      # BLUX Guard (stub)"
+      echo "  bq ca                         # BLUX Conscious Agent (stub)"
+      echo "  bq quantum                    # BLUX Quantum core (stub)"
+      echo "  bq shell                      # Switch to bq shell environment"
+      echo ""
+      
+      echo "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬ EXAMPLES ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+      echo "  bq mscan                      # Scan current directory"
+      echo "  bq scan-repo                  # Scan current git repo"
+      echo "  bq df                         # Export to dat_\$REPO_NAME.md"
+      echo "  bq df -o report.md,report.txt # Multiple export formats"
+      echo "  bq dscan                      # Analyze latest scan"
+      echo "  bq dsn-rpt                    # Generate HTML report"
+      echo ""
+      
+      echo "╔════════════════════════════════════════════════════════════════╗"
+      echo "║           Output: ./outputs/dat_\$REPO_NAME.md                 ║"
+      echo "║           Reports: ./reports/report.html                       ║"
+      echo "╚════════════════════════════════════════════════════════════════╝"
+      ;;
+
+    *)
+      _bq_err "unknown subcommand '$cmd' (try: bq help)"
+      return 2
+      ;;
+  esac
+}
+
+# BLUX Quantum aliases for quick access
+alias bq-help='bq help'
+alias bq-scan='bq mscan'
+alias bq-analyze='bq dscan'
+alias bq-report='bq dsn-rpt'
+alias bq-export='bq df'
+
+############################################################################
+# 13) UPDATE FUNCTION v2.1
+############################################################################
+
+update() {
+    echo "BLUX Quantum System Update v2.1.0"
+    echo "=============================="
+    
+    local dry_run=0
+    local yes=0
+    
+    # Parse simple arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -n|--dry-run) dry_run=1 ;;
+            -y|--yes) yes=1 ;;
+            -h|--help)
+                echo "Usage: update [options]"
+                echo "  -n --dry-run    Simulate without making changes"
+                echo "  -y --yes        Non-interactive mode"
+                echo "  -h --help       Show this help"
+                return 0
+                ;;
+            *) echo "Unknown option: $1"; return 1 ;;
+        esac
+        shift
+    done
+    
+    # System package managers
+    if command -v apt >/dev/null && [[ $dry_run -eq 0 ]]; then
+        echo "Updating APT packages..."
+        sudo apt update && sudo apt full-upgrade -y
+    elif [[ $dry_run -eq 1 ]]; then
+        echo "[DRY-RUN] Would update APT packages"
+    fi
+
+    if command -v brew >/dev/null && [[ $dry_run -eq 0 ]]; then
+        echo "Updating Homebrew..."
+        brew update && brew upgrade
+    elif [[ $dry_run -eq 1 ]]; then
+        echo "[DRY-RUN] Would update Homebrew"
+    fi
+
+    if command -v flatpak >/dev/null && [[ $dry_run -eq 0 ]]; then
+        echo "Updating Flatpaks..."
+        flatpak update -y
+    elif [[ $dry_run -eq 1 ]]; then
+        echo "[DRY-RUN] Would update Flatpaks"
+    fi
+
+    # Language package managers
+    if command -v pip3 >/dev/null && [[ $dry_run -eq 0 ]]; then
+        echo "Updating Python packages..."
+        pip3 install --upgrade pip
+        pip3 list --outdated --format=freeze | cut -d= -f1 | xargs -n1 pip3 install -U
+    elif [[ $dry_run -eq 1 ]]; then
+        echo "[DRY-RUN] Would update Python packages"
+    fi
+
+    if command -v pipx >/dev/null && [[ $dry_run -eq 0 ]]; then
+        echo "Updating pipx packages..."
+        pipx upgrade-all
+    elif [[ $dry_run -eq 1 ]]; then
+        echo "[DRY-RUN] Would update pipx packages"
+    fi
+
+    if command -v npm >/dev/null && [[ $dry_run -eq 0 ]]; then
+        echo "Updating global npm packages..."
+        npm update -g
+    elif [[ $dry_run -eq 1 ]]; then
+        echo "[DRY-RUN] Would update npm packages"
+    fi
+
+    if command -v cargo >/dev/null && [[ $dry_run -eq 0 ]]; then
+        echo "Updating Rust toolchain..."
+        rustup update
+    elif [[ $dry_run -eq 1 ]]; then
+        echo "[DRY-RUN] Would update Rust"
+    fi
+
+    # Shell frameworks
+    if [[ -d "${ZSH:-$HOME/.oh-my-zsh}" ]] && [[ $dry_run -eq 0 ]]; then
+        echo "Updating Oh My Zsh..."
+        "$ZSH/tools/upgrade.sh"
+    elif [[ $dry_run -eq 1 ]]; then
+        echo "[DRY-RUN] Would update Oh My Zsh"
+    fi
+
+    if [[ -d "$ZPLUG_HOME" ]] && [[ $dry_run -eq 0 ]]; then
+        echo "Updating zplug plugins..."
+        zplug update
+    elif [[ $dry_run -eq 1 ]]; then
+        echo "[DRY-RUN] Would update zplug"
+    fi
+
+    echo "BLUX Quantum system update complete!"
+}
+
+############################################################################
+# 14) COMPLETION FOR UPDATE
+############################################################################
+_update_completion() {
+    local -a opts
+    opts=(
+        '(-n --dry-run)'{-n,--dry-run}'[Simulate without changes]'
+        '(-y --yes)'{-y,--yes}'[Non-interactive mode]'
+        '(-h --help)'{-h,--help}'[Show help]'
+    )
+    _arguments $opts
+}
+compdef _update_completion update
+
+alias update_system='update'
+alias up='update'
+
+############################################################################
+# 15) UTILITY FUNCTIONS
+############################################################################
+reload-bq() { 
+    if [[ "$(basename "$SHELL")" == "bq" ]]; then
+        exec bq
+    else
+        source ~/.bqrc
+        echo "BLUX Quantum environment reloaded"
+    fi
+}
+alias rb='reload-bq'
+alias rz='reload-bq'
+
+bq-health() {
+    echo "BLUX Quantum Health Check:"
+    echo "• Shell: $(basename "$SHELL")"
+    echo "• BQ Mode: ${BQ_MODE:-native}"
+    echo "• ZSH Version: $(zsh --version 2>/dev/null | head -1 || echo "Not available")"
+    echo "• Oh My Zsh: $([ -d "$ZSH" ] && echo "Installed" || echo "Not found")"
+    echo "• zplug: $([ -d "$ZPLUG_HOME" ] && echo "Installed" || echo "Not found")"
+    echo "• Plugins loaded: $(zplug list --installed 2>/dev/null | wc -l)"
+    echo "• PATH directories: ${#path}"
+    echo "• BLUX Tools:"
+    echo "  - dat: $(command -v dat >/dev/null && echo "✓" || echo "✗")"
+    echo "  - dat-scan: $(command -v dat-scan >/dev/null && echo "✓" || echo "✗")"
+    echo "  - monster-scan: $(command -v monster-scan >/dev/null && echo "✓" || echo "✗")"
+    echo "• DATSCAN_HOME: ${DATSCAN_HOME:-Not set}"
+}
+
+############################################################################
+# 16) BQ SHELL SETUP FUNCTION
+############################################################################
+_setup_bq_shell() {
+    local bq_shell_path="$HOME/.local/bin/bq"
+    
+    # Create bq shell launcher
+    cat > "$bq_shell_path" << 'EOF'
+#!/usr/bin/env zsh
+# BLUX Quantum Shell Launcher
+# This file enables chsh -s bq functionality
+
+# Source the main bq configuration
+source ~/.bqrc
+
+# Start interactive shell
+if [[ -o interactive ]]; then
+    print_blux_header
+fi
+
+# Start zsh
+exec -a bq zsh "$@"
+EOF
+
+    chmod +x "$bq_shell_path"
+    
+    # Add to shells if not already present
+    if ! grep -q "$bq_shell_path" /etc/shells 2>/dev/null; then
+        echo "$bq_shell_path" | sudo tee -a /etc/shells
+    fi
+    
+    echo "BLUX Quantum shell installed at: $bq_shell_path"
+    echo "You can now set as default shell with: chsh -s $bq_shell_path"
+}
+
+############################################################################
+# 17) BLUX QUANTUM ENVIRONMENT SETUP
+############################################################################
+setup_blux_quantum() {
+    # Ensure DATSCAN_HOME is set
+    if [[ -z "${DATSCAN_HOME:-}" ]]; then
+        export DATSCAN_HOME="$HOME/dev/dat-scan"
+    fi
+    
+    # Check for required tools
+    local missing_tools=()
+    for tool in dat dat-scan monster-scan; do
+        if ! command -v "$tool" >/dev/null 2>&1; then
+            missing_tools+=("$tool")
+        fi
+    done
+    
+    if [[ ${#missing_tools[@]} -gt 0 ]]; then
+        print -P "%F{yellow}BLUX Quantum: Missing tools: ${missing_tools[*]}%f"
+        print -P "%F{blue}Install from: https://github.com/Justadudeinspace%f"
+    else
+        print -P "%F{green}BLUX Quantum system ready - use 'bq help' for commands%f"
+    fi
+}
+
+############################################################################
+# 18) FINAL LOADING AND INITIALIZATION
+############################################################################
+
+# Local overrides (last)
+[[ -r ~/.bqrc.local ]] && source ~/.bqrc.local
+[[ -f ~/.zsh_aliases ]] && source ~/.zsh_aliases
+
+# Private environment (API keys, etc.)
+[[ -f ~/.config/private/env.zsh ]] && source ~/.config/private/env.zsh
+
+# Compile for speed
+if [[ ! -f ~/.bqrc.zwc || ~/.bqrc -nt ~/.bqrc.zwc ]]; then
+    zcompile -R ~/.bqrc.zwc ~/.bqrc 2>/dev/null
+fi
+
+# Optional: Fastfetch/Neofetch
+if command -v neofetch >/dev/null 2>&1 && [[ -o interactive ]]; then
+    neofetch
+fi
+
+# Final PATH export
+export PATH
+
+# Initialize BLUX Quantum
+setup_blux_quantum
+
+# Show header in interactive shells
+if [[ -o interactive ]]; then
+    print_blux_header
+fi
+
+# Success message
+print -P "%F{green}BLUX Quantum configuration loaded successfully!%f"
+print -P "%F{blue}Use 'bq help' for BLUX Quantum commands%f"

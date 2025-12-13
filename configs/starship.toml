@@ -1,0 +1,578 @@
+# BLUX10K Starship Configuration
+# Professional, cross-shell prompt with BLUX10K styling
+# Repository: https://github.com/Justadudeinspace/blux10k
+
+# Use custom format order
+format = """
+[░▒▓](#3B4252)\
+$username\
+$hostname\
+$directory\
+$git_branch\
+$git_status\
+$git_state\
+$git_metrics\
+$nix_shell\
+$conda\
+$python\
+$nodejs\
+$rust\
+$golang\
+$php\
+$java\
+$lua\
+$docker_context\
+$package\
+$cmake\
+$dart\
+$deno\
+$dotnet\
+$elixir\
+$elm\
+$erlang\
+$gcloud\
+$helm\
+$kotlin\
+$nim\
+$pulumi\
+$purescript\
+$rlang\
+$red\
+$ruby\
+$scala\
+$swift\
+$terraform\
+$vagrant\
+$zig\
+$buf\
+$c\
+$cpn\
+$cobol\
+$daml\
+$dart\
+$deno\
+$dotnet\
+$elixir\
+$elm\
+$gradle\
+$haskell\
+$haxe\
+$julia\
+$nodejs\
+$ocaml\
+$perl\
+$purescript\
+$rlang\
+$scala\
+$swift\
+$terraform\
+$vlang\
+$vagrant\
+$zig\
+$nix_shell\
+$conda\
+$spack\
+$memory_usage\
+$aws\
+$gcloud\
+$openstack\
+$azure\
+$sudo\
+$env_var\
+$custom\
+$cmd_duration\
+$line_break\
+$jobs\
+$battery\
+$time\
+[░▒▓](#3B4252)\
+$character"""
+
+# Disable the package module, hiding it from the prompt
+[package]
+disabled = true
+
+# Configuration for AWS module
+[aws]
+format = '[$symbol($profile)(\($region\))(\[$duration\])]($style)'
+symbol = '☁️  '
+style = 'bold yellow'
+
+[aws.region_aliases]
+ap-southeast-2 = 'au'
+us-east-1 = 'va'
+us-west-2 = 'or'
+
+# Configuration for Azure module
+[azure]
+format = '[$symbol($subscription)]($style)'
+symbol = 'ﴃ '
+style = 'blue'
+
+# Configuration for Battery module
+[battery]
+full_symbol = '🔋'
+charging_symbol = '⚡️'
+discharging_symbol = '💀'
+disabled = false
+format = '[$symbol$percentage]($style) '
+
+# Configuration for Buf module
+[buf]
+symbol = ' '
+
+# Configuration for C module
+[c]
+symbol = 'C '
+
+# Configuration for Character module
+[character]
+error_symbol = '[➜](bold red)'
+success_symbol = '[➜](bold green)'
+vicmd_symbol = '[V](bold green)'
+format = '$symbol '
+
+# Configuration for CMake module
+[cmake]
+format = '[$symbol($version)]($style)'
+symbol = '🛠 '
+
+# Configuration for Cmd Duration module
+[cmd_duration]
+format = '[$duration]($style) '
+min_time = 2_000
+show_milliseconds = false
+style = 'yellow'
+
+# Configuration for Conda module
+[conda]
+format = '[$symbol$environment]($style) '
+symbol = ' '
+ignore_base = false
+style = 'green'
+
+# Configuration for Crystal module
+[crystal]
+format = '[🟣 $version]($style)'
+
+# Configuration for Dart module
+[dart]
+format = '[🟣 $version]($style)'
+
+# Configuration for Deno module
+[deno]
+format = '[🦕 $version]($style)'
+
+# Configuration for Directory module
+[directory]
+format = '[ $path ]($style)'
+truncation_length = 3
+truncation_symbol = '…/'
+home_symbol = '~'
+read_only_style = 'red'
+read_only = ' '
+style = 'bold cyan'
+
+[directory.substitutions]
+'Documents' = ' '
+'Downloads' = ' '
+'Music' = ' '
+'Pictures' = ' '
+'Videos' = ' '
+'Projects' = ' '
+'Git' = ' '
+'Src' = ' '
+'Source' = ' '
+'.config' = ' '
+'.local' = ' '
+'.cache' = ' '
+
+# Configuration for Docker Context module
+[docker_context]
+format = '[🐳 $context]($style) '
+symbol = ''
+style = 'blue'
+
+# Configuration for Dotnet module
+[dotnet]
+format = '[🥅 $version ($tfm)]($style)'
+symbol = '•NET '
+heuristic = true
+style = 'blue'
+
+# Configuration for Elixir module
+[elixir]
+format = '[💧 $version ($otp_version)]($style)'
+
+# Configuration for Elm module
+[elm]
+format = '[🌳 $version]($style)'
+
+# Configuration for Environment Variable module
+[env_var]
+variable = 'BLUX10K_ENV'
+format = '[$env_value]($style) '
+default = 'BLUX10K'
+style = 'bold green'
+
+# Configuration for Erlang module
+[erlang]
+format = '[ $version]($style)'
+
+# Configuration for Gcloud module
+[gcloud]
+format = '[$symbol$account(@$domain)(\($region\))]($style)'
+symbol = ' '
+
+# Configuration for Git Branch module
+[git_branch]
+format = '[ $symbol$branch ]($style)'
+symbol = ' '
+truncation_length = 9223372036854775807
+truncation_symbol = '…'
+style = 'bold purple'
+
+# Configuration for Git Commit module
+[git_commit]
+commit_hash_length = 4
+tag_symbol = '🏷 '
+
+# Configuration for Git State module
+[git_state]
+format = '\([$state( $progress_current/$progress_total)]($style)\) '
+cherry_pick = '[🍒 PICKING](bold red)'
+
+# Configuration for Git Status module
+[git_status]
+format = '([$all_status$ahead_behind]($style) )'
+conflicted = '🏳'
+ahead = '⇡${count}'
+behind = '⇣${count}'
+diverged = '⇕'
+untracked = '?${count}'
+stashed = '📦'
+modified = '!${count}'
+staged = '+${count}'
+renamed = '»${count}'
+deleted = '✘${count}'
+style = 'bold green'
+
+# Configuration for Git Metrics module
+[git_metrics]
+added_style = 'bold green'
+deleted_style = 'bold red'
+disabled = false
+
+# Configuration for Golang module
+[golang]
+format = '[🐹 $version]($style)'
+symbol = 'Go '
+
+# Configuration for Haskell module
+[haskell]
+format = '[λ $version]($style)'
+symbol = 'λ '
+
+# Configuration for Haxe module
+[haxe]
+format = '[⌘ $version]($style)'
+
+# Configuration for Helm module
+[helm]
+format = '[⎈ $version]($style)'
+
+# Configuration for Hostname module
+[hostname]
+ssh_only = true
+format = '@[$hostname]($style) '
+trim_at = '.'
+style = 'bold yellow'
+
+# Configuration for Java module
+[java]
+format = '[☕ $version]($style)'
+
+# Configuration for Jobs module
+[jobs]
+symbol = '✦'
+threshold = 1
+format = '[$symbol$number]($style) '
+style = 'bold green'
+
+# Configuration for Julia module
+[julia]
+format = '[ஃ $version]($style)'
+
+# Configuration for Kotlin module
+[kotlin]
+format = '[🅺 $version]($style)'
+
+# Configuration for Kubernetes module
+[kubernetes]
+format = '[☸ $context \($namespace\)]($style)'
+symbol = '☸ '
+
+# Configuration for Line Break module
+[line_break]
+disabled = false
+
+# Configuration for Lua module
+[lua]
+format = '[🌙 $version]($style)'
+
+# Configuration for Memory Usage module
+[memory_usage]
+format = '[$symbol($usage | $swap)]($style) '
+threshold = 75
+symbol = '🐏 '
+style = 'bold white'
+
+# Configuration for Nim module
+[nim]
+format = '[👑 $version]($style)'
+
+# Configuration for Nix-shell module
+[nix_shell]
+format = '[$symbol$state( \($name\))]($style) '
+symbol = '❄️  '
+
+# Configuration for Node.js module
+[nodejs]
+format = '[⬢ $version]($style)'
+symbol = 'Node '
+
+# Configuration for OCaml module
+[ocaml]
+format = '[🐫 $version]($style)'
+
+# Configuration for OpenStack module
+[openstack]
+format = '[$symbol$cloud(\($project\))]($style)'
+
+# Configuration for Package module
+[package]
+format = '[📦 $version]($style)'
+
+# Configuration for Perl module
+[perl]
+format = '[🐪 $version]($style)'
+
+# Configuration for PHP module
+[php]
+format = '[🐘 $version]($style)'
+
+# Configuration for Pulumi module
+[pulumi]
+format = '[ $username]($style)'
+
+# Configuration for PureScript module
+[purescript]
+format = '[⇶ $version]($style)'
+
+# Configuration for Python module
+[python]
+format = '[🐍 $version $virtualenv]($style)'
+python_binary = ['python', 'python3', 'py']
+symbol = 'Py '
+
+# Configuration for R Lang module
+[rlang]
+format = '[📐 $version]($style)'
+
+# Configuration for Red module
+[red]
+format = '[🔺 $version]($style)'
+
+# Configuration for Ruby module
+[ruby]
+format = '[💎 $version]($style)'
+symbol = 'Rb '
+
+# Configuration for Rust module
+[rust]
+format = '[🦀 $version]($style)'
+symbol = 'Rs '
+
+# Configuration for Scala module
+[scala]
+format = '[🆂 $version]($style)'
+
+# Configuration for Shell module
+[shell]
+bash_indicator = 'bsh'
+fish_indicator = 'fsh'
+ion_indicator = 'ion'
+pwsh_indicator = 'psh'
+zsh_indicator = 'zsh'
+format = '[$indicator]($style) '
+disabled = false
+
+# Configuration for Spack module
+[spack]
+symbol = '🅢 '
+
+# Configuration for Sudo module
+[sudo]
+format = '[as $user]($style)'
+style = 'bold green'
+symbol = '🛡 '
+disabled = false
+
+# Configuration for Swift module
+[swift]
+format = '[🐦 $version]($style)'
+
+# Configuration for Terraform module
+[terraform]
+format = '[💠 $workspace]($style)'
+
+# Configuration for Time module
+[time]
+format = '[🕒 $time]($style) '
+disabled = false
+time_format = '%T'
+utc_time_offset = '-5'
+time_range = '-'
+
+# Configuration for Username module
+[username]
+format = '[$user]($style)'
+show_always = false
+style_user = 'bold blue'
+style_root = 'bold red'
+
+# Configuration for Vagrant module
+[vagrant]
+format = '[⍱ $version]($style)'
+
+# Configuration for Zig module
+[zig]
+format = '[⚡ $version]($style)'
+
+# Custom modules for BLUX10K
+[custom.blux10k]
+command = 'echo "BLUX10K"'
+when = 'true'
+format = '[🅑 $output]($style)'
+style = 'bold blue'
+description = 'BLUX10K System Indicator'
+
+[custom.k8s_context]
+command = '''
+  if command -v kubectl >/dev/null 2>&1; then
+    context=$(kubectl config current-context 2>/dev/null)
+    namespace=$(kubectl config view --minify --output 'jsonpath={..namespace}' 2>/dev/null)
+    if [ -n "$context" ]; then
+      if [ -n "$namespace" ] && [ "$namespace" != "default" ]; then
+        echo "⎈ $context ($namespace)"
+      else
+        echo "⎈ $context"
+      fi
+    fi
+  fi
+'''
+when = 'command -v kubectl >/dev/null 2>&1'
+format = '[$output]($style)'
+style = 'bold cyan'
+description = 'Kubernetes Context'
+
+[custom.docker_status]
+command = '''
+  if command -v docker >/dev/null 2>&1; then
+    if docker info >/dev/null 2>&1; then
+      echo "🐳 Running"
+    else
+      echo "🐳 Stopped"
+    fi
+  fi
+'''
+when = 'command -v docker >/dev/null 2>&1'
+format = '[$output]($style)'
+style = 'bold blue'
+description = 'Docker Status'
+
+[custom.system_info]
+command = '''
+  if [[ "$(uname)" == "Darwin" ]]; then
+    echo "🍎 macOS"
+  elif [[ -f /etc/os-release ]]; then
+    source /etc/os-release
+    echo "🐧 $NAME"
+  elif [[ "$(uname)" == "Linux" ]]; then
+    echo "🐧 Linux"
+  else
+    echo "💻 $(uname)"
+  fi
+'''
+when = 'true'
+format = '[$output]($style)'
+style = 'bold yellow'
+description = 'Operating System'
+
+[custom.terminal_info]
+command = 'echo "$TERM"'
+when = 'true'
+format = '[🖥 $output]($style)'
+style = 'bold magenta'
+description = 'Terminal Type'
+
+[custom.uptime]
+command = '''
+  if [[ "$(uname)" == "Darwin" ]]; then
+    uptime | awk -F'( |,|:)+' '{if ($7=="min") printf "%s min", $6; else if ($7~/^day/) printf "%s days", $6; else printf "%s:%s hrs", $6, $7}'
+  else
+    uptime -p | sed 's/up //'
+  fi
+'''
+when = 'true'
+format = '[⏱ $output]($style)'
+style = 'bold green'
+description = 'System Uptime'
+
+# BLUX10K specific custom commands
+[custom.blux10k_update]
+command = 'echo "b10k update"'
+when = 'false'  # Disabled by default, enable when needed
+format = '[🔄 $output]($style)'
+style = 'bold cyan'
+description = 'BLUX10K Update Command'
+
+[custom.blux10k_health]
+command = 'zsh -c "zsh-health" | head -1'
+when = 'false'  # Disabled by default
+format = '[❤️ $output]($style)'
+style = 'bold green'
+description = 'BLUX10K Health Check'
+
+# Right prompt configuration (experimental)
+[right_format]
+format = """
+$custom\
+$cmd_duration\
+$jobs\
+$battery\
+$time"""
+
+# Palette for consistent colors (BLUX10K theme)
+[palette]
+primary = "3B4252"  # Dark blue-gray
+secondary = "434C5E" # Medium blue-gray
+accent = "4C566A"   # Light blue-gray
+success = "A3BE8C"  # Green
+warning = "EBCB8B"  # Yellow
+error = "BF616A"    # Red
+info = "81A1C1"     # Blue
+highlight = "88C0D0" # Cyan
+muted = "616E88"    # Muted gray
+
+# Scan timeout for performance
+scan_timeout = 30
+
+# Add blank space to the prompt
+add_newline = true
+
+# Command evaluation timeout
+command_timeout = 500
+
+# Option to continue showing traceback on error
+show_traceback = false

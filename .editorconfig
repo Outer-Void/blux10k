@@ -1,0 +1,519 @@
+# BLUX10K EditorConfig
+# Professional code style configuration for BLUX10K development
+# Repository: https://github.com/Justadudeinspace/blux10k
+
+# Top-level configuration (applies to all files)
+root = true
+
+# =============================================================================
+# Universal Configuration
+# =============================================================================
+
+[*]
+# Character set
+charset = utf-8
+
+# Line endings (Unix-style)
+end_of_line = lf
+
+# File trailing newline
+insert_final_newline = true
+
+# Trim trailing whitespace
+trim_trailing_whitespace = true
+
+# =============================================================================
+# Shell Scripts (ZSH/Bash)
+# =============================================================================
+
+[*.{zsh,sh,bash}]
+# Indentation
+indent_style = space
+indent_size = 2
+tab_width = 2
+
+# Max line length (for readability)
+max_line_length = 100
+
+# Shell-specific settings
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# =============================================================================
+# Configuration Files
+# =============================================================================
+
+[*.{conf,config,cfg}]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 80
+
+# =============================================================================
+# TOML Files (Starship, Cargo, etc.)
+# =============================================================================
+
+[*.toml]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 80
+
+# =============================================================================
+# JSON Files
+# =============================================================================
+
+[*.json]
+indent_style = space
+indent_size = 2
+tab_width = 2
+insert_final_newline = true
+
+# JSON Manifest files can have longer lines for URLs
+[blux10k-manifest.json]
+max_line_length = 120
+
+# =============================================================================
+# Markdown Documentation
+# =============================================================================
+
+[*.md]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 80
+trim_trailing_whitespace = true
+
+# Allow longer lines for code blocks and URLs
+[README.md]
+max_line_length = 120
+
+[**/docs/*.md]
+max_line_length = 100
+
+# =============================================================================
+# YAML Files (GitHub Actions, etc.)
+# =============================================================================
+
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 80
+
+# =============================================================================
+# Git Files
+# =============================================================================
+
+[.gitignore]
+indent_style = space
+indent_size = 2
+tab_width = 2
+
+[.gitattributes]
+indent_style = space
+indent_size = 2
+tab_width = 2
+
+# =============================================================================
+# License File
+# =============================================================================
+
+[LICENSE]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 80
+
+# =============================================================================
+# Editor Configuration Files
+# =============================================================================
+
+[.editorconfig]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 80
+
+# =============================================================================
+# Makefiles
+# =============================================================================
+
+[Makefile]
+indent_style = tab
+tab_width = 4
+
+[**/Makefile]
+indent_style = tab
+tab_width = 4
+
+# =============================================================================
+# Docker Files
+# =============================================================================
+
+[Dockerfile]
+indent_style = space
+indent_size = 4
+tab_width = 4
+max_line_length = 80
+
+[*.dockerfile]
+indent_style = space
+indent_size = 4
+tab_width = 4
+max_line_length = 80
+
+# =============================================================================
+# Python Scripts
+# =============================================================================
+
+[*.py]
+indent_style = space
+indent_size = 4
+tab_width = 4
+max_line_length = 88  # Black formatter compatibility
+
+# =============================================================================
+# Rust Files
+# =============================================================================
+
+[*.rs]
+indent_style = space
+indent_size = 4
+tab_width = 4
+max_line_length = 100
+
+# =============================================================================
+# JavaScript/TypeScript
+# =============================================================================
+
+[*.{js,ts,jsx,tsx}]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 80
+
+# =============================================================================
+# CSS/SCSS
+# =============================================================================
+
+[*.{css,scss,sass}]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 80
+
+# =============================================================================
+# HTML Files
+# =============================================================================
+
+[*.{html,htm}]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 120
+
+# =============================================================================
+# XML Files
+# =============================================================================
+
+[*.{xml,xsd}]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 80
+
+# =============================================================================
+# Configuration Templates
+# =============================================================================
+
+[*.example]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 80
+
+[*.template]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 80
+
+# =============================================================================
+# Test Files
+# =============================================================================
+
+[**/tests/*]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 100
+
+[**/test_*.{zsh,sh}]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 100
+
+# =============================================================================
+# Script Files
+# =============================================================================
+
+[**/scripts/*.sh]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 100
+
+# =============================================================================
+# Configuration Directories
+# =============================================================================
+
+[**/configs/*]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 80
+
+# =============================================================================
+# Documentation Files
+# =============================================================================
+
+[**/docs/*.md]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 100
+
+# =============================================================================
+# Private Configuration (Security Sensitive)
+# =============================================================================
+
+[**/private/*]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 80
+
+# =============================================================================
+# CI/CD Configuration
+# =============================================================================
+
+[**/.github/**/*.yml]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 80
+
+[**/.github/**/*.yaml]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 80
+
+# =============================================================================
+# Binary and Generated Files (No formatting)
+# =============================================================================
+
+[*.{bin,exe,dll,so,dylib}]
+charset = binary
+indent_style = unspecified
+indent_size = unspecified
+tab_width = unspecified
+max_line_length = unspecified
+trim_trailing_whitespace = false
+insert_final_newline = false
+
+[*.{jpg,jpeg,png,gif,ico,svg,pdf}]
+charset = binary
+indent_style = unspecified
+indent_size = unspecified
+tab_width = unspecified
+max_line_length = unspecified
+trim_trailing_whitespace = false
+insert_final_newline = false
+
+[*.{zip,rar,7z,tar,gz,whl}]
+charset = binary
+indent_style = unspecified
+indent_size = unspecified
+tab_width = unspecified
+max_line_length = unspecified
+trim_trailing_whitespace = false
+insert_final_newline = false
+
+# =============================================================================
+# Font Files
+# =============================================================================
+
+[*.{ttf,otf,woff,woff2,eot}]
+charset = binary
+indent_style = unspecified
+indent_size = unspecified
+tab_width = unspecified
+max_line_length = unspecified
+trim_trailing_whitespace = false
+insert_final_newline = false
+
+# =============================================================================
+# Compiled ZSH Files
+# =============================================================================
+
+[*.zwc]
+charset = binary
+indent_style = unspecified
+indent_size = unspecified
+tab_width = unspecified
+max_line_length = unspecified
+trim_trailing_whitespace = false
+insert_final_newline = false
+
+# =============================================================================
+# Log Files
+# =============================================================================
+
+[*.log]
+indent_style = unspecified
+indent_size = unspecified
+tab_width = unspecified
+max_line_length = unspecified
+trim_trailing_whitespace = false
+insert_final_newline = false
+
+# =============================================================================
+# Temporary/Cache Files
+# =============================================================================
+
+[*.{tmp,swp,swo}]
+charset = binary
+indent_style = unspecified
+indent_size = unspecified
+tab_width = unspecified
+max_line_length = unspecified
+trim_trailing_whitespace = false
+insert_final_newline = false
+
+# =============================================================================
+# BLUX10K Specific File Types
+# =============================================================================
+
+# Powerlevel10k configuration
+[.p10k.zsh]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 100
+
+# Starship configuration
+[starship.toml]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 80
+
+# Neofetch configuration
+[b10k.neofetch.conf]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 80
+
+# Environment templates
+[env.zsh.example]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 80
+
+# =============================================================================
+# Project Manifest
+# =============================================================================
+
+[blux10k-manifest.json]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 120
+
+# =============================================================================
+# Module Files
+# =============================================================================
+
+[**/modules/**/*.zsh]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 100
+
+# =============================================================================
+# Plugin Files
+# =============================================================================
+
+[**/plugins/**/*.zsh]
+indent_style = space
+indent_size = 2
+tab_width = 2
+max_line_length = 100
+
+# =============================================================================
+# Exceptions for specific files that need different formatting
+# =============================================================================
+
+# Package.json might need longer lines for dependencies
+[package.json]
+max_line_length = 120
+
+# Composer.json for PHP dependencies
+[composer.json]
+max_line_length = 120
+
+# Cargo.toml for Rust dependencies
+[Cargo.toml]
+max_line_length = 100
+
+# =============================================================================
+# File-specific overrides
+# =============================================================================
+
+# Main zshrc can have longer comments
+[.zshrc]
+max_line_length = 120
+
+# Installation scripts might have longer commands
+[install.sh]
+max_line_length = 120
+
+[scripts/install-*.sh]
+max_line_length = 120
+
+# =============================================================================
+# BLUX10K Code Style Summary
+# =============================================================================
+#
+# Universal Rules:
+# - UTF-8 encoding
+# - Unix line endings (LF)
+# - Trim trailing whitespace
+# - Final newline required
+#
+# Indentation:
+# - Shell scripts: 2 spaces
+# - Python: 4 spaces
+# - Makefiles: Tabs
+# - Most configs: 2 spaces
+#
+# Line Length:
+# - Code: 80-100 characters
+# - Documentation: 80-120 characters
+# - Configuration: 80 characters
+# - URLs and long strings: exceptions allowed
+#
+# File Type Support:
+# - Shell (ZSH/Bash)
+# - Configuration (TOML, JSON, YAML)
+# - Documentation (Markdown)
+# - Code (Python, Rust, JavaScript)
+# - Project-specific (p10k, starship, neofetch)
+#
+# This configuration ensures consistent code style across the BLUX10K project
+# and makes collaboration easier by enforcing uniform formatting standards.
