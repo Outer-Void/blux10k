@@ -31,21 +31,21 @@ chmod +x install.sh
 ## Configuration
 
 The setup includes:
-
+```
 · Custom .zshrc with performance optimizations
 · Powerlevel10k prompt configuration
 · Neofetch system information display
 · Private environment for sensitive data
 · Platform-specific optimizations
-
+```
 ## Usage
-
+```
 · update - Update system packages and tools
 · mkcd <dir> - Create directory and cd into it
 · killport <port> - Kill process on specified port
 · extract <archive> - Extract various archive formats
 · rz - Reload zsh configuration
-
+```
 ## License
 
-MIT License - see LICENSE file for details
+MIT License - see [LICENSE](./LICENSE) file for details
