@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+DEFAULT_REPO=$(cd "$SCRIPT_DIR/.." && pwd)
+
+resolve_repo() {
+    local candidate=""
+    if [[ -n "${BLUX10K_HOME:-}" ]] && [[ -d "$BLUX10K_HOME" ]]; then
+        echo "$BLUX10K_HOME"
+        return 0
+    fi
+
+    if [[ -f "$HOME/.config/blux10k/install.conf" ]]; then
+        candidate=$(grep -E '^BLUX10K_HOME=' "$HOME/.config/blux10k/install.conf" | tail -n 1 || true)
+        candidate=${candidate#BLUX10K_HOME=}
+        candidate=${candidate%\"}
+        candidate=${candidate#\"}
+        if [[ -n "$candidate" ]] && [[ -d "$candidate" ]]; then
+            echo "$candidate"
+            return 0
+        fi
+    fi
+
+    echo "$DEFAULT_REPO"
+}
+
+show_help() {
+    cat << 'HELP'
+BLUX10K Command Line Interface
+
+Usage: b10k <command> [options]
+
+Commands:
+  update        Update BLUX10K and dependencies
+  doctor        Run environment diagnostics
+  health        Alias for doctor
+  help          Show this help
+  version       Show repository version
+HELP
+}
+
+command=${1:-help}
+shift || true
+
+repo=$(resolve_repo)
+
+case "$command" in
+    update)
+        exec "$repo/scripts/update-function.sh" "$@"
+        ;;
+    doctor)
+        exec "$repo/scripts/doctor.sh" "$@"
+        ;;
+    health)
+        exec "$repo/scripts/doctor.sh" "$@"
+        ;;
+    version)
+        if git -C "$repo" rev-parse --git-dir >/dev/null 2>&1; then
+            git -C "$repo" describe --tags --always
+        else
+            echo "BLUX10K"
+        fi
+        ;;
+    help|--help|-h)
+        show_help
+        ;;
+    *)
+        echo "Unknown command: $command" >&2
+        show_help
+        exit 1
+        ;;
+esac

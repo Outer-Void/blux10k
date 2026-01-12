@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+REPO_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
+
 # Color codes for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -20,6 +23,15 @@ log_warn() { echo -e "${YELLOW}⚠ ${NC}$1"; }
 log_error() { echo -e "${RED}✖ ${NC}$1"; }
 log_debug() { echo -e "${CYAN}🐛 ${NC}$1"; }
 log_step() { echo -e "${MAGENTA}➜ ${NC}$1"; }
+
+backup_file() {
+    local target=$1
+    if [[ -f "$target" ]]; then
+        local backup_name="${target}.backup.$(date +%Y%m%d_%H%M%S)"
+        cp "$target" "$backup_name"
+        log_success "Backed up $target to $backup_name"
+    fi
+}
 
 # Print banner
 print_banner() {
@@ -581,7 +593,7 @@ deploy_configs() {
     log_info "Deploying configuration files..."
     
     # Create necessary directories
-    mkdir -p ~/.config/neofetch ~/.config/private ~/.local/{bin,share,state} ~/.cache
+    mkdir -p ~/.config/neofetch ~/.config/private ~/.config/blux10k ~/.local/{bin,share,state} ~/.cache
     
     # Windows Native uses different config approach
     if [[ "$OS_TYPE" == "windows-native" ]]; then
@@ -590,8 +602,9 @@ deploy_configs() {
     fi
     
     # Deploy .zshrc
-    if [[ -f "configs/.zshrc" ]]; then
-        cp "configs/.zshrc" ~/.zshrc
+    if [[ -f "$REPO_ROOT/configs/.zshrc" ]]; then
+        backup_file ~/.zshrc
+        cp "$REPO_ROOT/configs/.zshrc" ~/.zshrc
         log_success "Deployed custom .zshrc"
     else
         log_warn "Custom .zshrc not found, using template"
@@ -599,25 +612,29 @@ deploy_configs() {
     fi
     
     # Deploy p10k config
-    if [[ -f "configs/.p10k.zsh" ]]; then
-        cp "configs/.p10k.zsh" ~/.p10k.zsh
+    if [[ -f "$REPO_ROOT/configs/.p10k.zsh" ]]; then
+        backup_file ~/.p10k.zsh
+        cp "$REPO_ROOT/configs/.p10k.zsh" ~/.p10k.zsh
         log_success "Deployed p10k configuration"
     else
         create_p10k_template
     fi
     
     # Deploy neofetch config
-    if [[ -f "configs/neofetch.conf" ]]; then
-        cp "configs/neofetch.conf" ~/.config/neofetch/config.conf
+    if [[ -f "$REPO_ROOT/configs/b10k.neofetch.conf" ]]; then
+        backup_file ~/.config/neofetch/config.conf
+        cp "$REPO_ROOT/configs/b10k.neofetch.conf" ~/.config/neofetch/config.conf
+        cp "$REPO_ROOT/configs/b10k.neofetch.conf" ~/.config/neofetch/b10k.neofetch.conf
         log_success "Deployed neofetch configuration"
     else
         create_neofetch_template
     fi
     
     # Deploy starship config if available
-    if [[ -f "configs/starship.toml" ]]; then
+    if [[ -f "$REPO_ROOT/configs/starship.toml" ]]; then
         mkdir -p ~/.config
-        cp "configs/starship.toml" ~/.config/starship.toml
+        backup_file ~/.config/starship.toml
+        cp "$REPO_ROOT/configs/starship.toml" ~/.config/starship.toml
         log_success "Deployed starship configuration"
     fi
     
@@ -627,6 +644,28 @@ deploy_configs() {
     fi
     
     log_success "Configuration files deployed"
+}
+
+record_install_location() {
+    local config_dir=\"$HOME/.config/blux10k\"
+    mkdir -p \"$config_dir\"
+    cat > \"$config_dir/install.conf\" << EOF
+# BLUX10K install location
+BLUX10K_HOME=\"$REPO_ROOT\"
+EOF
+    log_success \"Recorded install location in $config_dir/install.conf\"
+}
+
+install_cli() {
+    local bin_dir=\"$HOME/.local/bin\"
+    mkdir -p \"$bin_dir\"
+    if [[ -x \"$REPO_ROOT/scripts/b10k\" ]]; then
+        cp \"$REPO_ROOT/scripts/b10k\" \"$bin_dir/b10k\"
+        chmod +x \"$bin_dir/b10k\"
+        log_success \"Installed b10k command to $bin_dir/b10k\"
+    else
+        log_warn \"b10k script not found or not executable\"
+    fi
 }
 
 # Windows-specific configuration deployment
@@ -791,24 +830,26 @@ EOF
 create_zshrc_template() {
     cat > ~/.zshrc << 'EOF'
 # BLUX10K - Professional Developer Terminal Setup
-# Universal Cross-Platform Edition
 # https://github.com/Justadudeinspace/blux10k
 
-# Section 1: Performance
-ZSH_DISABLE_COMPFIX=true
+# Load install config if available
+if [[ -f "$HOME/.config/blux10k/install.conf" ]]; then
+    source "$HOME/.config/blux10k/install.conf"
+fi
 
-# Section 2: zplug
-if [[ -f ~/.zplug/init.zsh ]]; then
-    source ~/.zplug/init.zsh
+export BLUX10K_HOME="${BLUX10K_HOME:-$HOME/Projects/blux10k}"
+export PATH="$HOME/.local/bin:$PATH"
 
-    # Essential plugins
+# Zplug setup
+if [[ -f "$HOME/.zplug/init.zsh" ]]; then
+    source "$HOME/.zplug/init.zsh"
+
     zplug "zsh-users/zsh-syntax-highlighting", defer:2
     zplug "zsh-users/zsh-autosuggestions"
     zplug "zsh-users/zsh-completions"
     zplug "agkozak/zsh-z"
     zplug "romkatv/powerlevel10k", as:theme, depth:1
 
-    # Install plugins if not already installed
     if ! zplug check; then
         zplug install
     fi
@@ -816,18 +857,16 @@ if [[ -f ~/.zplug/init.zsh ]]; then
     zplug load
 fi
 
-# Section 3: Private environment
-[[ -f ~/.config/private/env.zsh ]] && source ~/.config/private/env.zsh
+# Private environment
+[[ -f "$HOME/.config/private/env.zsh" ]] && source "$HOME/.config/private/env.zsh"
 
-# Section 4: XDG Base Directory
+# XDG base dirs
 export XDG_CONFIG_HOME="$HOME/.config"
 export XDG_CACHE_HOME="$HOME/.cache"
 export XDG_STATE_HOME="$HOME/.local/state"
 
-# Create necessary directories
 mkdir -p "$XDG_CACHE_HOME/zsh" "$XDG_STATE_HOME/zsh"
 
-# Section 5: History
 HISTFILE="${XDG_STATE_HOME}/zsh/history-$(date +%Y-%m)"
 HISTSIZE=100000
 SAVEHIST=100000
@@ -838,32 +877,18 @@ setopt HIST_IGNORE_ALL_DUPS
 setopt HIST_REDUCE_BLANKS
 setopt HIST_IGNORE_SPACE
 
-# Section 6: BLUX Quantum Integration
-if [[ -f "$HOME/.bqrc" ]]; then
-    source "$HOME/.bqrc"
+# BLUX10K modules
+if [[ -d "$BLUX10K_HOME/modules" ]]; then
+    for module in "$BLUX10K_HOME/modules/zsh/aliases.zsh" \
+                  "$BLUX10K_HOME/modules/zsh/functions.zsh" \
+                  "$BLUX10K_HOME/modules/update/update-core.zsh"; do
+        [[ -f "$module" ]] && source "$module"
+    done
 fi
 
-# Platform-specific configurations
-case "$(uname -s)" in
-    Darwin*)
-        # macOS specific
-        export BROWSER="open"
-        ;;
-    Linux*)
-        # Linux specific
-        export BROWSER="xdg-open"
-        ;;
-    MINGW*|CYGWIN*)
-        # Windows specific
-        export BROWSER="start"
-        ;;
-esac
-
 # Load additional configurations
-for config_file in ~/.config/zsh/*.zsh; do
-    if [[ -f "$config_file" ]]; then
-        source "$config_file"
-    fi
+for config_file in "$HOME/.config/zsh"/*.zsh(N); do
+    [[ -f "$config_file" ]] && source "$config_file"
 done
 
 EOF
@@ -992,9 +1017,9 @@ main() {
                 detect_platform
                 echo "Platform: $OS_TYPE"
                 echo "Package Manager: $PACKAGE_MANAGER"
-                [[ -n "$CONTAINER" ]] && echo "Container: $CONTAINER"
-                [[ -n "$CLOUD_ENV" ]] && echo "Cloud Environment: $CLOUD_ENV"
-                [[ -n "$WSL_VERSION" ]] && echo "WSL Version: $WSL_VERSION"
+                [[ -n "${CONTAINER:-}" ]] && echo "Container: $CONTAINER"
+                [[ -n "${CLOUD_ENV:-}" ]] && echo "Cloud Environment: $CLOUD_ENV"
+                [[ -n "${WSL_VERSION:-}" ]] && echo "WSL Version: $WSL_VERSION"
                 exit 0
                 ;;
             --skip-deps)
@@ -1045,6 +1070,8 @@ main() {
     fi
     
     deploy_configs
+    record_install_location
+    install_cli
     setup_zsh_default
     
     if [[ -z "${MINIMAL_INSTALL:-}" ]]; then

@@ -1,1 +1,5 @@
-# placeholder
+# BLUX10K aliases
+
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'

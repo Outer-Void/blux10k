@@ -41,11 +41,42 @@ The setup includes:
 ## Usage
 ```
 · update - Update system packages and tools
+· b10k update --dry-run - Preview update actions
+· b10k doctor - Validate your BLUX10K installation
 · mkcd <dir> - Create directory and cd into it
 · killport <port> - Kill process on specified port
 · extract <archive> - Extract various archive formats
 · rz - Reload zsh configuration
 ```
+
+## Update & Doctor
+
+Run updates safely with explicit phases and backups:
+
+```bash
+b10k update
+b10k update --dry-run
+b10k update --offline
+```
+
+Validate your installation and diagnose common issues:
+
+```bash
+b10k doctor
+```
+
+## Supported Platforms
+
+- Linux (Debian/Ubuntu, Arch, Fedora, Alpine, etc.)
+- macOS (Homebrew)
+- WSL1/WSL2
+- Termux (Android)
+- Windows Native (PowerShell + Oh My Posh)
+
+## Troubleshooting
+
+- Run `b10k doctor` to diagnose common issues.
+- See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for details.
 ## License
 
 MIT License - see [LICENSE](./LICENSE) file for details
