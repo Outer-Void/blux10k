@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# BLUX10K Enhanced Installer v4.1.0
+# BLUX10K Enhanced Installer v4.0.0
 # Universal Cross-Platform Professional Terminal Setup
 # Enterprise-Grade | Performance Optimized | Security Hardened
 
@@ -19,7 +19,9 @@ IFS=$'\n\t'
 # ===========================================================================
 
 # Version and metadata
-readonly BLUX10K_VERSION="4.1.0"
+if [[ -z "${BLUX10K_VERSION-}" ]]; then
+    readonly BLUX10K_VERSION="4.0.0"
+fi
 readonly BLUX10K_REPO="https://github.com/Justadudeinspace/blux10k"
 readonly BLUX10K_DOCS="https://blux10k.github.io/docs"
 readonly B10K_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/blux10k"
@@ -66,7 +68,7 @@ readonly EMOJI_PROMPT="💻"
 show_interactive_menu() {
     clear
     echo -e "${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║              BLUX10K Interactive Setup Menu v4.1.0            ║${NC}"
+    echo -e "${BLUE}║              BLUX10K Interactive Setup Menu v4.0.0            ║${NC}"
     echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     
@@ -354,7 +356,7 @@ print_banner() {
     ░▀▀░░▀▀▀░▀▀▀░▀░▀░ ▀▀▀░▀▀▀░▀▀▀░▀▀▀░░▀░░▀▀▀░░▀░░▀▀▀░▀░▀
     
 ╔════════════════════════════════════════════════════════════════╗
-║                 BLUX10K ENHANCED INSTALLER v4.1.0             ║
+║                 BLUX10K ENHANCED INSTALLER v4.0.0             ║
 ║           Enterprise-Grade Universal Terminal Setup           ║
 ║        Performance Optimized | Security Hardened | AI Ready   ║
 ╚════════════════════════════════════════════════════════════════╝
@@ -2555,7 +2557,7 @@ post_install_setup() {
 create_update_script() {
     cat > "$BLUX10K_CONFIG_DIR/scripts/update.sh" << 'EOF'
 #!/usr/bin/env bash
-# BLUX10K Update Script v4.1.0
+# BLUX10K Update Script v4.0.0
 
 set -euo pipefail
 
@@ -2568,7 +2570,7 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║                  BLUX10K System Update v4.1.0                 ║${NC}"
+echo -e "${BLUE}║                  BLUX10K System Update v4.0.0                 ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
 
 # Detect package manager
@@ -2602,7 +2604,7 @@ EOF
 create_health_check() {
     cat > "$BLUX10K_CONFIG_DIR/scripts/health-check.sh" << 'EOF'
 #!/usr/bin/env bash
-# BLUX10K Health Check v4.1.0
+# BLUX10K Health Check v4.0.0
 
 echo "🔍 BLUX10K System Health Check"
 echo "════════════════════════════════════════════════════════════════"
@@ -2707,7 +2709,7 @@ print_completion_message() {
     cat << EOF
 
 ${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}
-${BLUE}║              BLUX10K INSTALLATION COMPLETE v4.1.0             ║${NC}
+${BLUE}║              BLUX10K INSTALLATION COMPLETE v4.0.0             ║${NC}
 ${BLUE}║                ${EMOJI_SPARKLES} Professional Terminal Environment Ready ${EMOJI_SPARKLES}            ║${NC}
 ${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}
 
@@ -2743,7 +2745,7 @@ ${YELLOW}⚠️  Important Security Notes:${NC}
   • Never commit private configuration to version control
   • Regular updates: ${GREEN}${BLUX10K_CONFIG_DIR}/scripts/update.sh${NC}
 
-${GREEN}${EMOJI_ROCKET} BLUX10K v4.1.0 is ready for professional development!${NC}
+${GREEN}${EMOJI_ROCKET} BLUX10K v4.0.0 is ready for professional development!${NC}
 ${GRAY}Installation log: ${BLUX10K_INSTALL_LOG}${NC}
 
 EOF
@@ -2833,7 +2835,7 @@ parse_arguments() {
 
 show_help() {
     cat << 'EOF'
-BLUX10K Enhanced Installer v4.1.0
+BLUX10K Enhanced Installer v4.0.0
 
 Usage: ./install.sh [OPTIONS]
 

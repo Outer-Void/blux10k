@@ -336,7 +336,7 @@ print_banner() {
     ░▀▀░░▀▀▀░▀▀▀░▀░▀░ ▀▀▀░▀▀▀░▀▀▀░▀▀▀░░▀░░▀▀▀░░▀░░▀▀▀░▀░▀
     
 ╔════════════════════════════════════════════════════════════════╗
-║                 BLUX10K ENHANCED INSTALLER v4.1.0             ║
+║                 BLUX10K ENHANCED INSTALLER v4.0.0             ║
 ║           Enterprise-Grade Universal Terminal Setup           ║
 ║        Performance Optimized | Security Hardened | AI Ready   ║
 ╚════════════════════════════════════════════════════════════════╝
