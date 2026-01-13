@@ -63,7 +63,7 @@
   fi
 
   # Add Kubernetes context if in k8s project
-  if [[ -d "k8s" || -f "kustomization.yaml" || -f "*.yaml" =~ "apiVersion:" ]]; then
+  if [[ -d "k8s" || -f "kustomization.yaml" || -n $(print -l *.yaml(N)) ]]; then
     context_elements+=(blux_k8s_context)
   fi
 
@@ -486,7 +486,7 @@ function prompt_blux_go_version() {
     if [[ -f "go.mod" ]] || command -v go >/dev/null 2>&1; then
         local go_version
         if command -v go >/dev/null 2>&1; then
-            go_version=$(go version 2>/dev/null | grep -oP 'go\K[0-9]+\.[0-9]+(\.[0-9]+)?')
+            go_version=$(go version 2>/dev/null | awk '{for (i=1; i<=NF; i++) if ($i ~ /^go[0-9]/) {sub(/^go/, "", $i); print $i; exit}}')
         fi
         
         if [[ -n "$go_version" ]]; then
