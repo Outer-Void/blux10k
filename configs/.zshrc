@@ -18,48 +18,55 @@ IFS=$'\n\t'
 # CONSTANTS & GLOBAL CONFIGURATION
 # ===========================================================================
 
+set_readonly_default() {
+    local name="$1"
+    local value="$2"
+
+    if [[ -z "${!name-}" ]]; then
+        readonly "${name}=${value}"
+    fi
+}
+
 # Version and metadata
-if [[ -z "${BLUX10K_VERSION-}" ]]; then
-    readonly BLUX10K_VERSION="4.0.0"
-fi
-readonly BLUX10K_REPO="https://github.com/Justadudeinspace/blux10k"
-readonly BLUX10K_DOCS="https://blux10k.github.io/docs"
-readonly B10K_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/blux10k"
-readonly BLUX10K_CONFIG_DIR="${B10K_DIR}"
-readonly BLUX10K_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/blux10k"
-readonly BLUX10K_LOG_DIR="${BLUX10K_CACHE_DIR}/logs"
-readonly BLUX10K_INSTALL_LOG="${BLUX10K_LOG_DIR}/install-$(date +%Y%m%d-%H%M%S).log"
-readonly B10K_DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/blux10k"
-readonly P10K_DIR="${B10K_DATA_DIR}/p10k/powerlevel10k"
+set_readonly_default "BLUX10K_VERSION" "4.0.0"
+set_readonly_default "BLUX10K_REPO" "https://github.com/Justadudeinspace/blux10k"
+set_readonly_default "BLUX10K_DOCS" "https://blux10k.github.io/docs"
+set_readonly_default "B10K_DIR" "${XDG_CONFIG_HOME:-$HOME/.config}/blux10k"
+set_readonly_default "BLUX10K_CONFIG_DIR" "${B10K_DIR}"
+set_readonly_default "BLUX10K_CACHE_DIR" "${XDG_CACHE_HOME:-$HOME/.cache}/blux10k"
+set_readonly_default "BLUX10K_LOG_DIR" "${BLUX10K_CACHE_DIR}/logs"
+set_readonly_default "BLUX10K_INSTALL_LOG" "${BLUX10K_LOG_DIR}/install-$(date +%Y%m%d-%H%M%S).log"
+set_readonly_default "B10K_DATA_DIR" "${XDG_DATA_HOME:-$HOME/.local/share}/blux10k"
+set_readonly_default "P10K_DIR" "${B10K_DATA_DIR}/p10k/powerlevel10k"
 
 # Color codes for output (ANSI 256-color support)
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly BLUE='\033[0;34m'
-readonly MAGENTA='\033[0;35m'
-readonly CYAN='\033[0;36m'
-readonly WHITE='\033[1;37m'
-readonly GRAY='\033[0;90m'
-readonly ORANGE='\033[38;5;208m'
-readonly PURPLE='\033[38;5;93m'
-readonly NC='\033[0m' # No Color
+set_readonly_default "RED" '\033[0;31m'
+set_readonly_default "GREEN" '\033[0;32m'
+set_readonly_default "YELLOW" '\033[1;33m'
+set_readonly_default "BLUE" '\033[0;34m'
+set_readonly_default "MAGENTA" '\033[0;35m'
+set_readonly_default "CYAN" '\033[0;36m'
+set_readonly_default "WHITE" '\033[1;37m'
+set_readonly_default "GRAY" '\033[0;90m'
+set_readonly_default "ORANGE" '\033[38;5;208m'
+set_readonly_default "PURPLE" '\033[38;5;93m'
+set_readonly_default "NC" '\033[0m' # No Color
 
 # Emojis for better UX
-readonly EMOJI_INFO="🔵"
-readonly EMOJI_SUCCESS="✅"
-readonly EMOJI_WARN="⚠️"
-readonly EMOJI_ERROR="❌"
-readonly EMOJI_DEBUG="🐛"
-readonly EMOJI_STEP="➡️"
-readonly EMOJI_SPARKLES="✨"
-readonly EMOJI_ROCKET="🚀"
-readonly EMOJI_SHIELD="🛡️"
-readonly EMOJI_GEAR="⚙️"
-readonly EMOJI_CLOCK="⏱️"
-readonly EMOJI_CHOICE="🔘"
-readonly EMOJI_PLUGIN="🔌"
-readonly EMOJI_PROMPT="💻"
+set_readonly_default "EMOJI_INFO" "🔵"
+set_readonly_default "EMOJI_SUCCESS" "✅"
+set_readonly_default "EMOJI_WARN" "⚠️"
+set_readonly_default "EMOJI_ERROR" "❌"
+set_readonly_default "EMOJI_DEBUG" "🐛"
+set_readonly_default "EMOJI_STEP" "➡️"
+set_readonly_default "EMOJI_SPARKLES" "✨"
+set_readonly_default "EMOJI_ROCKET" "🚀"
+set_readonly_default "EMOJI_SHIELD" "🛡️"
+set_readonly_default "EMOJI_GEAR" "⚙️"
+set_readonly_default "EMOJI_CLOCK" "⏱️"
+set_readonly_default "EMOJI_CHOICE" "🔘"
+set_readonly_default "EMOJI_PLUGIN" "🔌"
+set_readonly_default "EMOJI_PROMPT" "💻"
 
 # ===========================================================================
 # INTERACTIVE MENU SYSTEM
