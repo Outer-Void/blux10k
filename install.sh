@@ -3,6 +3,12 @@
 # Universal Cross-Platform Professional Terminal Setup
 # Enterprise-Grade | Performance Optimized | Security Hardened
 
+BLUX10K_ORIG_SHELLOPTS="$(set +o)"
+BLUX10K_ORIG_IFS="$IFS"
+BLUX10K_ORIG_TRAP_ERR="$(trap -p ERR || true)"
+BLUX10K_ORIG_TRAP_INT="$(trap -p INT || true)"
+BLUX10K_ORIG_TRAP_TERM="$(trap -p TERM || true)"
+
 set -euo pipefail
 IFS=$'\n\t'
 
@@ -58,13 +64,42 @@ is_sourced() {
     [[ "${BASH_SOURCE[0]}" != "${0}" ]]
 }
 
+restore_shell_state() {
+    if [[ -n "${BLUX10K_ORIG_SHELLOPTS:-}" ]]; then
+        eval "${BLUX10K_ORIG_SHELLOPTS}"
+    fi
+    if [[ -n "${BLUX10K_ORIG_IFS:-}" ]]; then
+        IFS="${BLUX10K_ORIG_IFS}"
+    fi
+    if [[ -n "${BLUX10K_ORIG_TRAP_ERR:-}" ]]; then
+        eval "${BLUX10K_ORIG_TRAP_ERR}"
+    else
+        trap - ERR
+    fi
+    if [[ -n "${BLUX10K_ORIG_TRAP_INT:-}" ]]; then
+        eval "${BLUX10K_ORIG_TRAP_INT}"
+    else
+        trap - INT
+    fi
+    if [[ -n "${BLUX10K_ORIG_TRAP_TERM:-}" ]]; then
+        eval "${BLUX10K_ORIG_TRAP_TERM}"
+    else
+        trap - TERM
+    fi
+}
+
 safe_exit() {
     local status="${1:-0}"
     if is_sourced; then
+        restore_shell_state
         return "${status}"
     fi
     exit "${status}"
 }
+
+if is_sourced; then
+    trap 'restore_shell_state' RETURN
+fi
 
 # ===========================================================================
 # INTERACTIVE MENU SYSTEM
@@ -2994,14 +3029,6 @@ trap 'log_warn "Installation interrupted by user"; safe_exit 130' INT TERM
 # ===========================================================================
 # MAIN EXECUTION
 # ===========================================================================
-
-# Run main if script is executed directly
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
-fi
-
-# Error handling
-trap 'log_error "Installation failed at line $LINENO"; safe_exit 1' ERR
 
 # Run main if script is executed directly
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
