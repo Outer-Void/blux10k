@@ -50,6 +50,22 @@ readonly EMOJI_GEAR="⚙️"
 readonly EMOJI_CLOCK="⏱️"
 readonly EMOJI_CHOICE="🔘"
 
+# ===================================================================
+# SAFE EXIT HANDLING (AVOID EXITING SOURCED SHELLS)
+# ===================================================================
+
+is_sourced() {
+    [[ "${BASH_SOURCE[0]}" != "${0}" ]]
+}
+
+safe_exit() {
+    local status="${1:-0}"
+    if is_sourced; then
+        return "${status}"
+    fi
+    exit "${status}"
+}
+
 # ===========================================================================
 # INTERACTIVE MENU SYSTEM
 # ===========================================================================
@@ -190,7 +206,7 @@ show_interactive_menu() {
     read -rp "Proceed with installation? (y/N): " confirm
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         echo -e "${YELLOW}Installation cancelled.${NC}"
-        exit 0
+        return 1
     fi
     
     echo ""
@@ -1202,7 +1218,9 @@ main() {
     
     # Show interactive menu if not in silent mode
     if [[ "${BLUX10K_SILENT_INSTALL:-0}" -ne 1 ]]; then
-        show_interactive_menu
+        if ! show_interactive_menu; then
+            return 0
+        fi
     else
         # Set defaults for silent mode
         SELECTED_PROMPT="${BLUX10K_PROMPT:-powerlevel10k}"
@@ -1219,13 +1237,13 @@ main() {
     detect_platform
     
     log_step "2" "Checking permissions..."
-    check_permissions || exit 1
+    check_permissions || return 1
     
     log_step "3" "Installing package manager..."
     install_package_manager
     
     log_step "4" "Checking dependencies..."
-    check_dependencies || exit 1
+    check_dependencies || return 1
     
     log_step "5" "Installing core packages..."
     install_core_packages
@@ -1257,7 +1275,7 @@ main() {
     log_step "14" "Finalizing installation..."
     finalize_installation
     
-    exit 0
+    return 0
 }
 
 # ===========================================================================
@@ -1279,7 +1297,7 @@ main() {
 # 4. Update management (run_updates, update_system_packages, update_custom_tools)
 
 # Error handling
-trap 'log_error "Installation failed at line $LINENO"; exit 1' ERR
+trap 'log_error "Installation failed at line $LINENO"; safe_exit 1' ERR
 
 # Run main if script is executed directly
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
