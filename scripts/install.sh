@@ -273,11 +273,43 @@ detect_platform() {
     fi
     
     # Detect Termux (Android)
-    if [[ -d "/data/data/com.termux" ]]; then
+    if [[ -d "/data/data/com.termux" ]] && command -v pkg >/dev/null 2>&1; then
         IS_TERMUX="true"
         OS_TYPE="termux"
         PACKAGE_MANAGER="pkg"
         log_info "Detected Termux (Android)"
+    fi
+
+    # Detect proot environments
+    if [[ -n "${PROOT_VERSION:-}" ]] || grep -aq "proot" /proc/1/cmdline 2>/dev/null; then
+        IS_PROOT="true"
+        log_info "Detected proot environment"
+    fi
+
+    # Prefer apt in proot if available
+    if [[ -n "${IS_PROOT:-}" ]] && command -v apt-get >/dev/null 2>&1; then
+        PACKAGE_MANAGER="apt"
+    fi
+
+    # Ensure package manager is available; fallback between apt and pkg
+    if [[ "${PACKAGE_MANAGER}" == "pkg" ]] && ! command -v pkg >/dev/null 2>&1; then
+        if command -v apt-get >/dev/null 2>&1; then
+            log_warn "pkg not found, falling back to apt"
+            PACKAGE_MANAGER="apt"
+        else
+            log_error "pkg not found and apt-get unavailable. Please install a supported package manager."
+            return 1
+        fi
+    fi
+
+    if [[ "${PACKAGE_MANAGER}" == "apt" ]] && ! command -v apt-get >/dev/null 2>&1; then
+        if command -v pkg >/dev/null 2>&1; then
+            log_warn "apt-get not found, falling back to pkg"
+            PACKAGE_MANAGER="pkg"
+        else
+            log_error "apt-get not found and pkg unavailable. Please install a supported package manager."
+            return 1
+        fi
     fi
     
     # Detect container environments
