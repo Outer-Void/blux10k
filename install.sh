@@ -21,6 +21,7 @@ readonly BLUX10K_LOG_DIR="${BLUX10K_CACHE_DIR}/logs"
 readonly BLUX10K_INSTALL_LOG="${BLUX10K_LOG_DIR}/install-$(date +%Y%m%d-%H%M%S).log"
 readonly B10K_DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/blux10k"
 readonly P10K_DIR="${B10K_DATA_DIR}/p10k/powerlevel10k"
+readonly BLUX10K_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Color codes for output (ANSI 256-color support)
 readonly RED='\033[0;31m'
@@ -1187,6 +1188,11 @@ update_custom_tools() {
 # ===========================================================================
 # MAIN INSTALLATION FLOW
 # ===========================================================================
+
+if [[ -f "${BLUX10K_ROOT_DIR}/configs/.zshrc" ]]; then
+    # shellcheck source=configs/.zshrc
+    source "${BLUX10K_ROOT_DIR}/configs/.zshrc"
+fi
 
 main() {
     START_TIME=$(date +%s)

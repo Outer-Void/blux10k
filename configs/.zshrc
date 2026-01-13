@@ -3,6 +3,14 @@
 # Universal Cross-Platform Professional Terminal Setup
 # Enterprise-Grade | Performance Optimized | Security Hardened
 
+if [[ -n "${ZSH_VERSION:-}" ]]; then
+    export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+    if [[ -f "${XDG_CONFIG_HOME}/blux10k/blux10k.zsh" ]]; then
+        source "${XDG_CONFIG_HOME}/blux10k/blux10k.zsh"
+    fi
+    return 0 2>/dev/null || exit 0
+fi
+
 set -euo pipefail
 IFS=$'\n\t'
 
