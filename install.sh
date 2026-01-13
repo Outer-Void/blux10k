@@ -431,6 +431,11 @@ detect_platform() {
     local termux_prefix="false"
     local termux_version="false"
     local termux_android="false"
+    local android_kernel="false"
+
+    if [[ "$(uname -o 2>/dev/null)" == "Android" ]] || [[ -f "/system/build.prop" ]]; then
+        android_kernel="true"
+    fi
 
     # Detect operating system
     case "$(uname -s)" in
@@ -549,23 +554,43 @@ detect_platform() {
         log_info "Running in WSL ${WSL_VERSION}"
     fi
     
+    if [[ "${platform_forced}" != "true" ]] \
+        && [[ -f "/etc/os-release" ]] \
+        && [[ "${ID:-}" != "android" ]] \
+        && command -v apt-get >/dev/null 2>&1; then
+        if [[ "${OS_TYPE}" == "linux" ]]; then
+            OS_TYPE="debian"
+        fi
+        PACKAGE_MANAGER="apt"
+        apt_locked="true"
+        log_info "Locked package manager to apt based on /etc/os-release"
+    fi
+
     # Detect proot environments
+    local proot_signal="false"
     if grep -qi "proot" /proc/self/status 2>/dev/null \
-        || [[ -n "${PROOT_VERSION:-}" ]] \
+        || grep -aq "proot" /proc/self/maps 2>/dev/null \
         || grep -aq "proot" /proc/1/cmdline 2>/dev/null \
+        || env | grep -q '^PROOT_' \
         || { command -v proot >/dev/null 2>&1 && [[ -n "${PROOT_TMP_DIR:-}" || -n "${PROOT_ROOTFS:-}" ]]; }; then
+        proot_signal="true"
+    fi
+
+    if [[ "${proot_signal}" == "true" ]]; then
         IS_PROOT="true"
         log_info "Detected proot environment"
     fi
 
-    if [[ "${platform_forced}" != "true" ]] && [[ "${OS_TYPE}" == "debian" ]] && command -v apt-get >/dev/null 2>&1; then
-        PACKAGE_MANAGER="apt"
-        apt_locked="true"
-    fi
-
-    # Prefer apt in proot if available
-    if [[ -n "${IS_PROOT:-}" ]] && command -v apt-get >/dev/null 2>&1 && [[ "${platform_forced}" != "true" ]]; then
-        PACKAGE_MANAGER="apt"
+    if [[ "${android_kernel}" == "true" ]] \
+        && [[ -f "/etc/os-release" ]] \
+        && [[ "${ID:-}" != "android" ]] \
+        && command -v apt-get >/dev/null 2>&1; then
+        if [[ -z "${IS_PROOT:-}" ]] \
+            && [[ -d "/data/data/com.termux" ]] \
+            && [[ "${ID:-}" == "debian" ]]; then
+            IS_PROOT="true"
+            log_info "Detected proot environment (Termux host with Debian userland)"
+        fi
     fi
 
     if [[ "${PREFIX:-}" == *"/data/data/com.termux/files/usr"* ]]; then
@@ -576,7 +601,7 @@ detect_platform() {
         termux_version="true"
     fi
 
-    if [[ "$(uname -o 2>/dev/null)" == "Android" ]] || [[ -f "/system/build.prop" ]]; then
+    if [[ "${android_kernel}" == "true" ]]; then
         termux_android="true"
     fi
 
@@ -591,6 +616,11 @@ detect_platform() {
         OS_TYPE="termux"
         PACKAGE_MANAGER="pkg"
         log_info "Detected Termux (Android)"
+    fi
+
+    # Prefer apt in proot if available
+    if [[ -n "${IS_PROOT:-}" ]] && command -v apt-get >/dev/null 2>&1 && [[ "${platform_forced}" != "true" ]]; then
+        PACKAGE_MANAGER="apt"
     fi
 
     # Ensure package manager is available; fallback between apt and pkg
@@ -2288,7 +2318,7 @@ case "\$(uname -s)" in
 esac
 
 # Environment-specific configurations
-if [[ -n "\${TERMUX_VERSION:-}" ]]; then
+if [[ -n "\${TERMUX_VERSION:-}" && "\${PREFIX:-}" == /data/data/com.termux/files/usr* ]]; then
     if [[ -f "\${BLUX10K_ROOT}/modules/platform/termux.zsh" ]]; then
         source "\${BLUX10K_ROOT}/modules/platform/termux.zsh"
     fi
