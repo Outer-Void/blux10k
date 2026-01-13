@@ -1,19 +1,35 @@
 #!/usr/bin/env zsh
 # BLUX10K Starship Helper Functions
 
+# Resolve Starship config paths with XDG support and legacy fallback.
+function _starship_config_base() {
+    echo "${XDG_CONFIG_HOME:-$HOME/.config}"
+}
+
+function _starship_config_default() {
+    local base="$(_starship_config_base)"
+
+    if [[ -f "$base/starship.toml" ]]; then
+        echo "$base/starship.toml"
+    else
+        echo "$base/starship/starship.toml"
+    fi
+}
+
 # Function to toggle Starship modules
 function starship-toggle() {
+    local base="$(_starship_config_base)"
     case "$1" in
         minimal)
-            export STARSHIP_CONFIG=~/.config/starship/minimal.toml
+            export STARSHIP_CONFIG="$base/starship/minimal.toml"
             echo "Starship: Minimal mode activated"
             ;;
         blux10k)
-            export STARSHIP_CONFIG=~/.config/starship/starship.toml
+            export STARSHIP_CONFIG="$(_starship_config_default)"
             echo "Starship: BLUX10K mode activated"
             ;;
         detailed)
-            export STARSHIP_CONFIG=~/.config/starship/detailed.toml
+            export STARSHIP_CONFIG="$base/starship/detailed.toml"
             echo "Starship: Detailed mode activated"
             ;;
         help|--help|-h)
@@ -31,7 +47,7 @@ function starship-toggle() {
 
 # Function to reload Starship configuration
 function starship-reload() {
-    export STARSHIP_CONFIG=~/.config/starship/starship.toml
+    export STARSHIP_CONFIG="$(_starship_config_default)"
     echo "Starship configuration reloaded"
 }
 
@@ -47,7 +63,7 @@ function starship-config() {
 
 # Function to edit Starship configuration
 function starship-edit() {
-    ${EDITOR:-nvim} ~/.config/starship/starship.toml
+    ${EDITOR:-nvim} "$(_starship_config_default)"
 }
 
 # Add Starship help to b10k system
@@ -92,5 +108,5 @@ function b10k() {
 # Initialize Starship if available
 if command -v starship >/dev/null 2>&1; then
     eval "$(starship init zsh)"
-    export STARSHIP_CONFIG=~/.config/starship/starship.toml
+    export STARSHIP_CONFIG="$(_starship_config_default)"
 fi
