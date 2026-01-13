@@ -441,10 +441,22 @@ install_packages() {
             sudo DEBIAN_FRONTEND=noninteractive apt-get update "${apt_update_args[@]}"
 
             local install_list=()
+            local docker_optional_packages=("docker-ce" "docker-ce-cli" "containerd.io" "docker-compose-plugin" "docker" "docker-compose")
             for pkg in "${packages[@]}"; do
                 local candidate
+                local is_docker_optional=0
+                for docker_pkg in "${docker_optional_packages[@]}"; do
+                    if [[ "$pkg" == "$docker_pkg" ]]; then
+                        is_docker_optional=1
+                        break
+                    fi
+                done
                 candidate=$(apt-cache policy "$pkg" 2>/dev/null | awk -F': ' '/Candidate:/{print $2; exit}')
                 if ! apt-cache show "$pkg" >/dev/null 2>&1 || [[ -z "$candidate" || "$candidate" == "(none)" ]]; then
+                    if [[ $is_docker_optional -eq 1 ]]; then
+                        log_warn "Docker package ${pkg} has no installation candidate; skipping. Enable the Docker apt repository if you need Docker."
+                        continue
+                    fi
                     if [[ "$pkg" == "unrar" ]]; then
                         local fallback_candidate
                         fallback_candidate=$(apt-cache policy "unrar-free" 2>/dev/null | awk -F': ' '/Candidate:/{print $2; exit}')
@@ -745,6 +757,29 @@ install_modern_tools() {
             pm_tools=("fzf")
             ;;
     esac
+
+    if [[ -n "${IS_PROOT:-}" ]]; then
+        local filtered_tools=()
+        local skipped_docker=0
+        local docker_optional_packages=("docker-ce" "docker-ce-cli" "containerd.io" "docker-compose-plugin" "docker" "docker-compose")
+        for tool in "${pm_tools[@]}"; do
+            local skip_tool=0
+            for docker_pkg in "${docker_optional_packages[@]}"; do
+                if [[ "$tool" == "$docker_pkg" ]]; then
+                    skip_tool=1
+                    skipped_docker=1
+                    break
+                fi
+            done
+            if [[ $skip_tool -eq 0 ]]; then
+                filtered_tools+=("$tool")
+            fi
+        done
+        if [[ $skipped_docker -eq 1 ]]; then
+            log_warn "Skipping Docker install: proot environment detected (Docker not supported here)."
+        fi
+        pm_tools=("${filtered_tools[@]}")
+    fi
     
     # Install via package manager
     if [[ ${#pm_tools[@]} -gt 0 ]]; then
