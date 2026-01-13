@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/blux10k.png" alt="BLUX10K" width="600">
+</p>
+
 # BLUX10K - Professional Developer Terminal Setup
 
 A comprehensive, cross-platform terminal environment designed for modern development workflows.
