@@ -1,8 +1,11 @@
 # BLUX10K Starship Configuration v4.0.0
-# Professional cross-shell prompt with BLUX10K Enhanced styling
 # Repository: https://github.com/Justadudeinspace/blux10k
-# Version: 4.0.0
-# Performance: Optimized | Security: Enhanced | Features: Complete
+#
+# Usage:
+#   - Copy or symlink this file to: ~/.config/starship.toml
+#   - Enable Starship in your shell (e.g., `eval "$(starship init zsh)"`)
+#   - Set BLUX10K_USE_STARSHIP=1 before sourcing the BLUX10K entrypoint if you
+#     want the installer-managed entrypoint to prefer Starship.
 
 # ===========================================================================
 # PERFORMANCE & SECURITY SETTINGS
