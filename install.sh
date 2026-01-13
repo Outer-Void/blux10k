@@ -431,6 +431,7 @@ detect_platform() {
     local termux_prefix="false"
     local termux_version="false"
     local termux_android="false"
+    local termux_data_dir="false"
     local android_kernel="false"
 
     if [[ "$(uname -o 2>/dev/null)" == "Android" ]] || [[ -f "/system/build.prop" ]]; then
@@ -604,14 +605,18 @@ detect_platform() {
     if [[ "${android_kernel}" == "true" ]]; then
         termux_android="true"
     fi
+    
+    if [[ -d "/data/data/com.termux" ]]; then
+        termux_data_dir="true"
+    fi
 
     # Detect Termux (Android)
     if [[ "${platform_forced}" != "true" ]] \
         && [[ "${apt_locked}" != "true" ]] \
-        && [[ "${IS_PROOT:-}" != "true" ]] \
+        && [[ -z "${IS_PROOT:-}" ]] \
         && [[ "${termux_prefix}" == "true" || "${termux_version}" == "true" ]] \
         && command -v pkg >/dev/null 2>&1 \
-        && { [[ "${termux_android}" == "true" ]] || [[ ! -f "/etc/os-release" ]] || [[ "${ID:-}" == "android" ]] || [[ "${ID_LIKE:-}" == *"android"* ]]; }; then
+        && { [[ "${termux_android}" == "true" ]] || [[ "${termux_data_dir}" == "true" ]] || [[ ! -f "/etc/os-release" ]] || [[ "${ID:-}" == "android" ]] || [[ "${ID_LIKE:-}" == *"android"* ]]; }; then
         IS_TERMUX="true"
         OS_TYPE="termux"
         PACKAGE_MANAGER="pkg"
@@ -640,6 +645,9 @@ detect_platform() {
     if [[ "${PACKAGE_MANAGER}" == "apt" ]] && ! command -v apt-get >/dev/null 2>&1; then
         if [[ "${platform_forced}" == "true" ]]; then
             log_error "apt-get not found but BLUX10K_FORCE_PLATFORM is set"
+            return 1
+        elif [[ -n "${IS_PROOT:-}" ]]; then
+            log_error "apt-get not found in proot environment. Please install apt."
             return 1
         elif command -v pkg >/dev/null 2>&1; then
             log_warn "apt-get not found, falling back to pkg"
