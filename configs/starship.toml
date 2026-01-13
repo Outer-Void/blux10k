@@ -1,8 +1,31 @@
-# BLUX10K Starship Configuration
-# Professional, cross-shell prompt with BLUX10K styling
+# BLUX10K Starship Configuration v4.0.0
+# Professional cross-shell prompt with BLUX10K Enhanced styling
 # Repository: https://github.com/Justadudeinspace/blux10k
+# Version: 4.0.0
+# Performance: Optimized | Security: Enhanced | Features: Complete
 
-# Use custom format order
+# ===========================================================================
+# PERFORMANCE & SECURITY SETTINGS
+# ===========================================================================
+
+# Performance optimization
+scan_timeout = 30  # Reduced from default 30s
+command_timeout = 500  # ms
+min_time = 2_000  # Show duration for commands >2s
+
+# Security settings
+show_traceback = false  # Don't show tracebacks in production
+allow_unsafe_commands = false  # Only allow safe commands
+
+# Debug mode (BLUX10K integration)
+[env_var]
+BLUX10K_DEBUG = false  # Set to true for debugging
+
+# ===========================================================================
+# GLOBAL FORMAT CONFIGURATION - BLUX10K ENHANCED
+# ===========================================================================
+
+# Main prompt format with BLUX10K styling
 format = """
 [░▒▓](#3B4252)\
 $username\
@@ -22,154 +45,151 @@ $php\
 $java\
 $lua\
 $docker_context\
-$package\
-$cmake\
-$dart\
-$deno\
-$dotnet\
-$elixir\
-$elm\
-$erlang\
-$gcloud\
-$helm\
-$kotlin\
-$nim\
-$pulumi\
-$purescript\
-$rlang\
-$red\
-$ruby\
-$scala\
-$swift\
-$terraform\
-$vagrant\
-$zig\
-$buf\
-$c\
-$cpn\
-$cobol\
-$daml\
-$dart\
-$deno\
-$dotnet\
-$elixir\
-$elm\
-$gradle\
-$haskell\
-$haxe\
-$julia\
-$nodejs\
-$ocaml\
-$perl\
-$purescript\
-$rlang\
-$scala\
-$swift\
-$terraform\
-$vlang\
-$vagrant\
-$zig\
-$nix_shell\
-$conda\
-$spack\
-$memory_usage\
+$kubernetes\
 $aws\
 $gcloud\
-$openstack\
 $azure\
+$openstack\
+$terraform\
+$pulumi\
+$cmake\
+$package\
+$memory_usage\
 $sudo\
 $env_var\
-$custom\
 $cmd_duration\
 $line_break\
+$custom.blux10k\
+$custom.k8s_context\
+$custom.docker_status\
+$custom.system_info\
+$custom.terminal_info\
+$custom.uptime\
+$custom.git_enhanced\
+$custom.path_info\
+$custom.cpu_load\
+$custom.disk_usage\
+$custom.network_status\
 $jobs\
 $battery\
 $time\
 [░▒▓](#3B4252)\
 $character"""
 
-# Disable the package module, hiding it from the prompt
+# Right prompt format (experimental - performance optimized)
+right_format = """
+$custom.performance\
+$custom.security\
+$custom.resource_monitor\
+$cmd_duration\
+$jobs\
+$battery\
+$time"""
+
+# Add blank space before prompt
+add_newline = true
+
+# ===========================================================================
+# PERFORMANCE OPTIMIZED MODULES
+# ===========================================================================
+
+# Disable rarely used modules for performance
 [package]
 disabled = true
 
-# Configuration for AWS module
-[aws]
-format = '[$symbol($profile)(\($region\))(\[$duration\])]($style)'
-symbol = '☁️  '
-style = 'bold yellow'
-
-[aws.region_aliases]
-ap-southeast-2 = 'au'
-us-east-1 = 'va'
-us-west-2 = 'or'
-
-# Configuration for Azure module
-[azure]
-format = '[$symbol($subscription)]($style)'
-symbol = 'ﴃ '
-style = 'blue'
-
-# Configuration for Battery module
-[battery]
-full_symbol = '🔋'
-charging_symbol = '⚡️'
-discharging_symbol = '💀'
-disabled = false
-format = '[$symbol$percentage]($style) '
-
-# Configuration for Buf module
 [buf]
-symbol = ' '
+disabled = true
 
-# Configuration for C module
-[c]
-symbol = 'C '
-
-# Configuration for Character module
-[character]
-error_symbol = '[➜](bold red)'
-success_symbol = '[➜](bold green)'
-vicmd_symbol = '[V](bold green)'
-format = '$symbol '
-
-# Configuration for CMake module
-[cmake]
-format = '[$symbol($version)]($style)'
-symbol = '🛠 '
-
-# Configuration for Cmd Duration module
-[cmd_duration]
-format = '[$duration]($style) '
-min_time = 2_000
-show_milliseconds = false
-style = 'yellow'
-
-# Configuration for Conda module
-[conda]
-format = '[$symbol$environment]($style) '
-symbol = ' '
-ignore_base = false
-style = 'green'
-
-# Configuration for Crystal module
 [crystal]
-format = '[🟣 $version]($style)'
+disabled = true
 
-# Configuration for Dart module
 [dart]
-format = '[🟣 $version]($style)'
+disabled = true
 
-# Configuration for Deno module
 [deno]
-format = '[🦕 $version]($style)'
+disabled = true
 
-# Configuration for Directory module
+[dotnet]
+disabled = true
+
+[elixir]
+disabled = true
+
+[elm]
+disabled = true
+
+[erlang]
+disabled = true
+
+[haskell]
+disabled = true
+
+[haxe]
+disabled = true
+
+[julia]
+disabled = true
+
+[kotlin]
+disabled = true
+
+[nim]
+disabled = true
+
+[ocaml]
+disabled = true
+
+[perl]
+disabled = true
+
+[purescript]
+disabled = true
+
+[rlang]
+disabled = true
+
+[red]
+disabled = true
+
+[scala]
+disabled = true
+
+[swift]
+disabled = true
+
+[vagrant]
+disabled = true
+
+[zig]
+disabled = true
+
+# ===========================================================================
+# CORE MODULES - BLUX10K ENHANCED
+# ===========================================================================
+
+# Username module with security indicators
+[username]
+format = '[$user]($style)'
+show_always = false
+style_user = 'bold blue'
+style_root = 'bold red'
+disabled = false
+
+# Hostname module with SSH detection
+[hostname]
+ssh_only = true
+format = '[@$hostname]($style) '
+trim_at = '.'
+style = 'bold yellow'
+disabled = false
+
+# Directory module with smart truncation
 [directory]
 format = '[ $path ]($style)'
-truncation_length = 3
+truncation_length = 4
 truncation_symbol = '…/'
 home_symbol = '~'
-read_only_style = 'red'
+read_only_style = 'bold red'
 read_only = ' '
 style = 'bold cyan'
 
@@ -180,71 +200,33 @@ style = 'bold cyan'
 'Pictures' = ' '
 'Videos' = ' '
 'Projects' = ' '
+'Work' = '💼 '
 'Git' = ' '
 'Src' = ' '
 'Source' = ' '
 '.config' = ' '
 '.local' = ' '
 '.cache' = ' '
+'.ssh' = '🔐 '
+'.gnupg' = '🔑 '
+'.docker' = '🐳 '
+'.kube' = '⎈ '
+'node_modules' = '📦 '
+'venv' = '🐍 '
+'.venv' = '🐍 '
+'.git' = ' '
 
-# Configuration for Docker Context module
-[docker_context]
-format = '[🐳 $context]($style) '
-symbol = ''
-style = 'blue'
-
-# Configuration for Dotnet module
-[dotnet]
-format = '[🥅 $version ($tfm)]($style)'
-symbol = '•NET '
-heuristic = true
-style = 'blue'
-
-# Configuration for Elixir module
-[elixir]
-format = '[💧 $version ($otp_version)]($style)'
-
-# Configuration for Elm module
-[elm]
-format = '[🌳 $version]($style)'
-
-# Configuration for Environment Variable module
-[env_var]
-variable = 'BLUX10K_ENV'
-format = '[$env_value]($style) '
-default = 'BLUX10K'
-style = 'bold green'
-
-# Configuration for Erlang module
-[erlang]
-format = '[ $version]($style)'
-
-# Configuration for Gcloud module
-[gcloud]
-format = '[$symbol$account(@$domain)(\($region\))]($style)'
-symbol = ' '
-
-# Configuration for Git Branch module
+# Git Branch module
 [git_branch]
 format = '[ $symbol$branch ]($style)'
 symbol = ' '
-truncation_length = 9223372036854775807
+truncation_length = 30
 truncation_symbol = '…'
 style = 'bold purple'
 
-# Configuration for Git Commit module
-[git_commit]
-commit_hash_length = 4
-tag_symbol = '🏷 '
-
-# Configuration for Git State module
-[git_state]
-format = '\([$state( $progress_current/$progress_total)]($style)\) '
-cherry_pick = '[🍒 PICKING](bold red)'
-
-# Configuration for Git Status module
+# Git Status module
 [git_status]
-format = '([$all_status$ahead_behind]($style) )'
+format = '([$all_status$ahead_behind]($style))'
 conflicted = '🏳'
 ahead = '⇡${count}'
 behind = '⇣${count}'
@@ -257,214 +239,208 @@ renamed = '»${count}'
 deleted = '✘${count}'
 style = 'bold green'
 
-# Configuration for Git Metrics module
+# Git State module
+[git_state]
+format = '([$state( $progress_current/$progress_total)]($style))'
+cherry_pick = '[🍒 PICKING](bold red)'
+rebase = '[↩ REBASING](bold yellow)'
+merge = '[🔄 MERGING](bold magenta)'
+revert = '[↩ REVERTING](bold cyan)'
+
+# Git Metrics module
 [git_metrics]
 added_style = 'bold green'
 deleted_style = 'bold red'
 disabled = false
+only_nonzero_diffs = true
 
-# Configuration for Golang module
-[golang]
-format = '[🐹 $version]($style)'
-symbol = 'Go '
+# ===========================================================================
+# LANGUAGE & FRAMEWORK MODULES
+# ===========================================================================
 
-# Configuration for Haskell module
-[haskell]
-format = '[λ $version]($style)'
-symbol = 'λ '
-
-# Configuration for Haxe module
-[haxe]
-format = '[⌘ $version]($style)'
-
-# Configuration for Helm module
-[helm]
-format = '[⎈ $version]($style)'
-
-# Configuration for Hostname module
-[hostname]
-ssh_only = true
-format = '@[$hostname]($style) '
-trim_at = '.'
-style = 'bold yellow'
-
-# Configuration for Java module
-[java]
-format = '[☕ $version]($style)'
-
-# Configuration for Jobs module
-[jobs]
-symbol = '✦'
-threshold = 1
-format = '[$symbol$number]($style) '
-style = 'bold green'
-
-# Configuration for Julia module
-[julia]
-format = '[ஃ $version]($style)'
-
-# Configuration for Kotlin module
-[kotlin]
-format = '[🅺 $version]($style)'
-
-# Configuration for Kubernetes module
-[kubernetes]
-format = '[☸ $context \($namespace\)]($style)'
-symbol = '☸ '
-
-# Configuration for Line Break module
-[line_break]
-disabled = false
-
-# Configuration for Lua module
-[lua]
-format = '[🌙 $version]($style)'
-
-# Configuration for Memory Usage module
-[memory_usage]
-format = '[$symbol($usage | $swap)]($style) '
-threshold = 75
-symbol = '🐏 '
-style = 'bold white'
-
-# Configuration for Nim module
-[nim]
-format = '[👑 $version]($style)'
-
-# Configuration for Nix-shell module
-[nix_shell]
-format = '[$symbol$state( \($name\))]($style) '
-symbol = '❄️  '
-
-# Configuration for Node.js module
-[nodejs]
-format = '[⬢ $version]($style)'
-symbol = 'Node '
-
-# Configuration for OCaml module
-[ocaml]
-format = '[🐫 $version]($style)'
-
-# Configuration for OpenStack module
-[openstack]
-format = '[$symbol$cloud(\($project\))]($style)'
-
-# Configuration for Package module
-[package]
-format = '[📦 $version]($style)'
-
-# Configuration for Perl module
-[perl]
-format = '[🐪 $version]($style)'
-
-# Configuration for PHP module
-[php]
-format = '[🐘 $version]($style)'
-
-# Configuration for Pulumi module
-[pulumi]
-format = '[ $username]($style)'
-
-# Configuration for PureScript module
-[purescript]
-format = '[⇶ $version]($style)'
-
-# Configuration for Python module
+# Python module with virtualenv support
 [python]
 format = '[🐍 $version $virtualenv]($style)'
 python_binary = ['python', 'python3', 'py']
 symbol = 'Py '
+style = 'bold yellow'
+disabled = false
 
-# Configuration for R Lang module
-[rlang]
-format = '[📐 $version]($style)'
+# Node.js module
+[nodejs]
+format = '[⬢ $version]($style)'
+symbol = 'Node '
+style = 'bold green'
+disabled = false
 
-# Configuration for Red module
-[red]
-format = '[🔺 $version]($style)'
-
-# Configuration for Ruby module
-[ruby]
-format = '[💎 $version]($style)'
-symbol = 'Rb '
-
-# Configuration for Rust module
+# Rust module
 [rust]
 format = '[🦀 $version]($style)'
 symbol = 'Rs '
-
-# Configuration for Scala module
-[scala]
-format = '[🆂 $version]($style)'
-
-# Configuration for Shell module
-[shell]
-bash_indicator = 'bsh'
-fish_indicator = 'fsh'
-ion_indicator = 'ion'
-pwsh_indicator = 'psh'
-zsh_indicator = 'zsh'
-format = '[$indicator]($style) '
+style = 'bold red'
 disabled = false
 
-# Configuration for Spack module
-[spack]
-symbol = '🅢 '
-
-# Configuration for Sudo module
-[sudo]
-format = '[as $user]($style)'
-style = 'bold green'
-symbol = '🛡 '
+# Go module
+[golang]
+format = '[🐹 $version]($style)'
+symbol = 'Go '
+style = 'bold cyan'
 disabled = false
 
-# Configuration for Swift module
-[swift]
-format = '[🐦 $version]($style)'
+# Java module
+[java]
+format = '[☕ $version]($style)'
+symbol = 'Java '
+style = 'bold magenta'
+disabled = false
 
-# Configuration for Terraform module
+# PHP module
+[php]
+format = '[🐘 $version]($style)'
+symbol = 'PHP '
+style = 'bold blue'
+disabled = false
+
+# ===========================================================================
+# CLOUD & INFRASTRUCTURE MODULES
+# ===========================================================================
+
+# AWS module with profile and region
+[aws]
+format = '[$symbol($profile)(\($region\))]($style)'
+symbol = '☁️  '
+style = 'bold yellow'
+disabled = false
+
+[aws.region_aliases]
+ap-southeast-2 = 'au'
+us-east-1 = 'va'
+us-west-2 = 'or'
+eu-west-1 = 'ie'
+ap-northeast-1 = 'jp'
+
+# Azure module
+[azure]
+format = '[$symbol($subscription)]($style)'
+symbol = 'ﴃ '
+style = 'blue'
+disabled = false
+
+# Google Cloud module
+[gcloud]
+format = '[$symbol$account(@$domain)(\($region\))]($style)'
+symbol = ' '
+style = 'bold blue'
+disabled = false
+
+# Kubernetes module
+[kubernetes]
+format = '[☸ $context \($namespace\)]($style)'
+symbol = '⎈ '
+style = 'bold cyan'
+disabled = false
+
+# Docker Context module
+[docker_context]
+format = '[🐳 $context]($style)'
+symbol = ''
+style = 'blue'
+disabled = false
+
+# Terraform module
 [terraform]
 format = '[💠 $workspace]($style)'
-
-# Configuration for Time module
-[time]
-format = '[🕒 $time]($style) '
+symbol = 'TF '
+style = 'bold magenta'
 disabled = false
-time_format = '%T'
-utc_time_offset = '-5'
+
+# ===========================================================================
+# SYSTEM & PERFORMANCE MODULES
+# ===========================================================================
+
+# Battery module
+[battery]
+full_symbol = '🔋'
+charging_symbol = '⚡️'
+discharging_symbol = '💀'
+disabled = false
+format = '[$symbol$percentage]($style)'
+style = 'bold yellow'
+
+[memory_usage]
+format = '[$symbol($usage | $swap)]($style)'
+threshold = 85
+symbol = '🐏 '
+style = 'bold white'
+disabled = false
+
+# Command Duration module
+[cmd_duration]
+format = '[$duration]($style)'
+min_time = 2_000
+show_milliseconds = false
+style = 'yellow'
+disabled = false
+
+# Jobs module
+[jobs]
+symbol = '✦'
+threshold = 1
+format = '[$symbol$number]($style)'
+style = 'bold green'
+disabled = false
+
+# Time module
+[time]
+format = '[$time]($style)'
+disabled = false
+time_format = '%H:%M:%S'
+utc_time_offset = 'local'
 time_range = '-'
+style = 'bold dimmed'
 
-# Configuration for Username module
-[username]
-format = '[$user]($style)'
-show_always = false
-style_user = 'bold blue'
-style_root = 'bold red'
+# Character module (prompt symbol)
+[character]
+error_symbol = '[✗](bold red)'
+success_symbol = '[➜](bold green)'
+vicmd_symbol = '[V](bold yellow)'
+format = '$symbol '
+disabled = false
 
-# Configuration for Vagrant module
-[vagrant]
-format = '[⍱ $version]($style)'
+# ===========================================================================
+# BLUX10K CUSTOM MODULES - ENHANCED
+# ===========================================================================
 
-# Configuration for Zig module
-[zig]
-format = '[⚡ $version]($style)'
-
-# Custom modules for BLUX10K
+# BLUX10K System Indicator
 [custom.blux10k]
-command = 'echo "BLUX10K"'
+command = 'echo "BLUX10K v4.0.0"'
 when = 'true'
 format = '[🅑 $output]($style)'
 style = 'bold blue'
 description = 'BLUX10K System Indicator'
+shell = ['bash', 'zsh', 'fish']
+interval = 3600  # Update every hour
 
+# Kubernetes Context (Enhanced)
 [custom.k8s_context]
 command = '''
   if command -v kubectl >/dev/null 2>&1; then
     context=$(kubectl config current-context 2>/dev/null)
-    namespace=$(kubectl config view --minify --output 'jsonpath={..namespace}' 2>/dev/null)
     if [ -n "$context" ]; then
+      namespace=$(kubectl config view --minify --output 'jsonpath={..namespace}' 2>/dev/null)
       if [ -n "$namespace" ] && [ "$namespace" != "default" ]; then
-        echo "⎈ $context ($namespace)"
+        # Color coding based on context name
+        if [[ "$context" == *prod* ]] || [[ "$context" == *production* ]]; then
+          echo "⎈ $context ($namespace)"
+        elif [[ "$context" == *stag* ]] || [[ "$context" == *staging* ]]; then
+          echo "🟡 $context ($namespace)"
+        elif [[ "$context" == *dev* ]] || [[ "$context" == *development* ]]; then
+          echo "🟢 $context ($namespace)"
+        elif [[ "$context" == *minikube* ]] || [[ "$context" == *docker-desktop* ]]; then
+          echo "🟣 $context ($namespace)"
+        else
+          echo "⎈ $context ($namespace)"
+        fi
       else
         echo "⎈ $context"
       fi
@@ -475,12 +451,20 @@ when = 'command -v kubectl >/dev/null 2>&1'
 format = '[$output]($style)'
 style = 'bold cyan'
 description = 'Kubernetes Context'
+shell = ['bash', 'zsh']
+interval = 10  # Update every 10 seconds
 
+# Docker Status (Enhanced)
 [custom.docker_status]
 command = '''
   if command -v docker >/dev/null 2>&1; then
     if docker info >/dev/null 2>&1; then
-      echo "🐳 Running"
+      containers=$(docker ps -q | wc -l)
+      if [ "$containers" -gt 0 ]; then
+        echo "🐳 Running ($containers containers)"
+      else
+        echo "🐳 Ready"
+      fi
     else
       echo "🐳 Stopped"
     fi
@@ -490,89 +474,532 @@ when = 'command -v docker >/dev/null 2>&1'
 format = '[$output]($style)'
 style = 'bold blue'
 description = 'Docker Status'
+shell = ['bash', 'zsh']
+interval = 10
 
+# System Info (Enhanced)
 [custom.system_info]
 command = '''
   if [[ "$(uname)" == "Darwin" ]]; then
-    echo "🍎 macOS"
+    echo "🍎 $(sw_vers -productVersion)"
   elif [[ -f /etc/os-release ]]; then
-    source /etc/os-release
-    echo "🐧 $NAME"
+    . /etc/os-release
+    if [[ -n "$PRETTY_NAME" ]]; then
+      echo "🐧 $PRETTY_NAME"
+    else
+      echo "🐧 $NAME"
+    fi
   elif [[ "$(uname)" == "Linux" ]]; then
-    echo "🐧 Linux"
+    if command -v lsb_release >/dev/null 2>&1; then
+      echo "🐧 $(lsb_release -ds)"
+    else
+      echo "🐧 $(uname -o)"
+    fi
   else
-    echo "💻 $(uname)"
+    echo "💻 $(uname -s)"
   fi
 '''
 when = 'true'
 format = '[$output]($style)'
 style = 'bold yellow'
 description = 'Operating System'
+shell = ['bash', 'zsh']
+interval = 3600
 
+# Terminal Info
 [custom.terminal_info]
-command = 'echo "$TERM"'
+command = '''
+  if [[ -n "$ITERM_SESSION_ID" ]]; then
+    echo "iTerm2"
+  elif [[ "$TERM_PROGRAM" == "vscode" ]]; then
+    echo "VSCode"
+  elif [[ -n "$KITTY_WINDOW_ID" ]]; then
+    echo "Kitty"
+  elif [[ -n "$ALACRITTY_WINDOW_ID" ]]; then
+    echo "Alacritty"
+  elif [[ "$TERM" == "tmux"* ]]; then
+    echo "tmux"
+  elif [[ -n "$TMUX" ]]; then
+    echo "tmux"
+  else
+    echo "${TERM:-unknown}"
+  fi
+'''
 when = 'true'
 format = '[🖥 $output]($style)'
 style = 'bold magenta'
 description = 'Terminal Type'
+shell = ['bash', 'zsh']
+interval = 30
 
+# System Uptime (Performance Optimized)
 [custom.uptime]
 command = '''
   if [[ "$(uname)" == "Darwin" ]]; then
-    uptime | awk -F'( |,|:)+' '{if ($7=="min") printf "%s min", $6; else if ($7~/^day/) printf "%s days", $6; else printf "%s:%s hrs", $6, $7}'
+    uptime | awk -F'( |,|:)+' '{
+      if ($6=="min") printf "%s min", $5;
+      else if ($7=="min") printf "%s min", $6;
+      else if ($6~/^day/) printf "%s days", $5;
+      else if ($7~/^day/) printf "%s days", $6;
+      else if ($8=="sec") printf "%s sec", $7;
+      else printf "%s:%s hrs", $6, $7
+    }'
   else
-    uptime -p | sed 's/up //'
+    uptime -p | sed "s/up //; s/ days\?/d/; s/ hours\?/h/; s/ minutes\?/m/; s/^ *//"
   fi
 '''
 when = 'true'
 format = '[⏱ $output]($style)'
 style = 'bold green'
 description = 'System Uptime'
+shell = ['bash', 'zsh']
+interval = 60
 
-# BLUX10K specific custom commands
-[custom.blux10k_update]
-command = 'echo "b10k update"'
-when = 'false'  # Disabled by default, enable when needed
-format = '[🔄 $output]($style)'
+# Enhanced Git Information
+[custom.git_enhanced]
+command = '''
+  if git rev-parse --git-dir > /dev/null 2>&1; then
+    branch=$(git symbolic-ref --short HEAD 2>/dev/null || git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)
+    changes=$(git status --porcelain 2>/dev/null | wc -l)
+    if [ "$changes" -gt 0 ]; then
+      echo "$branch ✎"
+    else
+      echo "$branch ✓"
+    fi
+  fi
+'''
+when = 'git rev-parse --git-dir > /dev/null 2>&1'
+format = '[$output]($style)'
 style = 'bold cyan'
-description = 'BLUX10K Update Command'
+description = 'Enhanced Git Status'
+shell = ['bash', 'zsh']
+interval = 5
 
-[custom.blux10k_health]
-command = 'zsh -c "zsh-health" | head -1'
-when = 'false'  # Disabled by default
-format = '[❤️ $output]($style)'
+# Path Information
+[custom.path_info]
+command = '''
+  pwd | sed "s|^$HOME|~|" | awk -F/ '{
+    if (NF <= 3) print $0;
+    else print ".../" $(NF-1) "/" $(NF)
+  }'
+'''
+when = 'true'
+format = '[📁 $output]($style)'
+style = 'bold blue'
+description = 'Smart Path Display'
+shell = ['bash', 'zsh']
+interval = 1
+
+# CPU Load
+[custom.cpu_load]
+command = '''
+  if [[ "$(uname)" == "Darwin" ]]; then
+    sysctl -n vm.loadavg | awk '{printf "%.2f %.2f %.2f", $2, $3, $4}'
+  else
+    awk '{printf "%.2f %.2f %.2f", $1, $2, $3}' /proc/loadavg
+  fi
+'''
+when = 'true'
+format = '[⚡ $output]($style)'
+style = 'bold yellow'
+description = 'CPU Load Average'
+shell = ['bash', 'zsh']
+interval = 10
+
+# Disk Usage
+[custom.disk_usage]
+command = '''
+  df -h / | awk "NR==2 {print \$4 \" free\"}"
+'''
+when = 'true'
+format = '[💾 $output]($style)'
+style = 'bold magenta'
+description = 'Disk Usage'
+shell = ['bash', 'zsh']
+interval = 30
+
+# Network Status
+[custom.network_status]
+command = '''
+  if ping -c 1 -W 1 8.8.8.8 >/dev/null 2>&1; then
+    echo "🌐 Online"
+  else
+    echo "🌐 Offline"
+  fi
+'''
+when = 'true'
+format = '[$output]($style)'
 style = 'bold green'
-description = 'BLUX10K Health Check'
+description = 'Network Status'
+shell = ['bash', 'zsh']
+interval = 30
 
-# Right prompt configuration (experimental)
-[right_format]
-format = """
-$custom\
-$cmd_duration\
-$jobs\
-$battery\
-$time"""
+# ===========================================================================
+# PERFORMANCE MONITORING MODULES
+# ===========================================================================
 
-# Palette for consistent colors (BLUX10K theme)
+[custom.performance]
+command = '''
+  if [[ -n "$BLUX10K_DEBUG" ]]; then
+    echo "⚡ $(($(date +%s%N) - ${BLUX10K_START_TIME:-0} | awk "{printf \"%.1fms\", \$1/1000000}"))"
+  fi
+'''
+when = '[[ -n "$BLUX10K_DEBUG" ]]'
+format = '[$output]($style)'
+style = 'bold cyan'
+description = 'Shell Performance'
+shell = ['zsh', 'bash']
+interval = 1
+
+[custom.resource_monitor]
+command = '''
+  mem=$(free -m | awk "NR==2 {printf \"%.1fG\", \$3/1024}")
+  load=$(awk "{printf \"%.2f\", \$1}" /proc/loadavg 2>/dev/null || echo "N/A")
+  echo "$mem RAM • $load Load"
+'''
+when = '[[ -f /proc/loadavg ]]'
+format = '[$output]($style)'
+style = 'bold white'
+description = 'Resource Monitor'
+shell = ['bash', 'zsh']
+interval = 10
+
+# Security Status Module
+[custom.security]
+command = '''
+  if [[ -n "$SSH_CONNECTION" ]]; then
+    echo "🔐 SSH"
+  elif [[ -n "$BLUX10K_SECURITY_MODE" ]]; then
+    echo "🛡️ $BLUX10K_SECURITY_MODE"
+  else
+    echo "🔓 Standard"
+  fi
+'''
+when = 'true'
+format = '[$output]($style)'
+style = 'bold yellow'
+description = 'Security Status'
+shell = ['bash', 'zsh']
+interval = 30
+
+# ===========================================================================
+# BLUX10K INTEGRATION MODULES
+# ===========================================================================
+
+# BLUX10K Update Status
+[custom.blux10k_update_status]
+command = '''
+  last_update=$(stat -c %Y ~/.cache/blux10k/last_update 2>/dev/null || echo 0)
+  now=$(date +%s)
+  days_since=$(( (now - last_update) / 86400 ))
+  if [ $days_since -gt 7 ]; then
+    echo "🔄 $days_since days"
+  fi
+'''
+when = '[[ -f ~/.cache/blux10k/last_update ]]'
+format = '[$output]($style)'
+style = 'bold yellow'
+description = 'BLUX10K Update Status'
+shell = ['bash', 'zsh']
+interval = 3600
+
+# Plugin Manager Status
+[custom.plugin_manager]
+command = '''
+  if [[ -d ~/.local/share/zinit ]]; then
+    count=$(find ~/.local/share/zinit/plugins -maxdepth 2 -type d 2>/dev/null | wc -l)
+    echo "Zinit ($((count/2)))"
+  elif [[ -d ~/.zplug ]]; then
+    count=$(zplug list --installed 2>/dev/null | wc -l)
+    echo "Zplug ($count)"
+  elif [[ -d ~/.zgenom ]]; then
+    echo "Zgenom"
+  else
+    echo "No PM"
+  fi
+'''
+when = 'true'
+format = '[$output]($style)'
+style = 'bold magenta'
+description = 'Plugin Manager'
+shell = ['zsh']
+interval = 3600
+
+# Shell Performance
+[custom.shell_performance]
+command = '''
+  if [[ -n "$_total_startup_time" ]]; then
+    echo "🚀 ${_total_startup_time}ms"
+  fi
+'''
+when = '[[ -n "$_total_startup_time" ]]'
+format = '[$output]($style)'
+style = 'bold green'
+description = 'Shell Startup Time'
+shell = ['zsh']
+interval = 3600
+
+# ===========================================================================
+# PALETTE & THEME - BLUX10K v4.0.0
+# ===========================================================================
+
 [palette]
-primary = "3B4252"  # Dark blue-gray
-secondary = "434C5E" # Medium blue-gray
-accent = "4C566A"   # Light blue-gray
-success = "A3BE8C"  # Green
-warning = "EBCB8B"  # Yellow
-error = "BF616A"    # Red
-info = "81A1C1"     # Blue
-highlight = "88C0D0" # Cyan
-muted = "616E88"    # Muted gray
+# BLUX10K Nord-inspired color scheme
+primary = "3B4252"    # Polar Night (dark blue-gray)
+secondary = "434C5E"   # Polar Night (medium blue-gray)
+accent = "4C566A"     # Polar Night (light blue-gray)
+background = "2E3440"  # Polar Night (darkest)
+foreground = "D8DEE9"  # Snow Storm (light gray)
 
-# Scan timeout for performance
-scan_timeout = 30
+# Status colors
+success = "A3BE8C"    # Aurora (green)
+warning = "EBCB8B"    # Aurora (yellow)
+error = "BF616A"      # Aurora (red)
+info = "81A1C1"       # Frost (blue)
+highlight = "88C0D0"   # Frost (cyan)
+muted = "616E88"      # Polar Night (muted gray)
 
-# Add blank space to the prompt
-add_newline = true
+# Language-specific colors
+python = "FFD43B"     # Python yellow
+nodejs = "339933"     # Node.js green
+rust = "DEA584"       # Rust orange
+golang = "00ADD8"     # Go cyan
+java = "007396"       # Java blue
+php = "777BB4"        # PHP purple
 
-# Command evaluation timeout
-command_timeout = 500
+# Cloud colors
+aws = "FF9900"        # AWS orange
+azure = "0078D4"      # Azure blue
+gcloud = "4285F4"     # Google blue
+kubernetes = "326CE5" # Kubernetes blue
 
-# Option to continue showing traceback on error
-show_traceback = false
+# ===========================================================================
+# STYLES & FORMATTING
+# ===========================================================================
+
+# Global style configuration
+[style]
+# Default styles for modules
+success = "bold green"
+warning = "bold yellow"
+error = "bold red"
+info = "bold blue"
+muted = "dimmed"
+
+# Module-specific style overrides
+[git_branch.style]
+default = "bold purple"
+detached = "bold red"
+
+[git_status.style]
+conflicted = "bold red"
+ahead = "bold yellow"
+behind = "bold yellow"
+diverged = "bold red"
+untracked = "bold green"
+stashed = "bold cyan"
+modified = "bold yellow"
+staged = "bold green"
+renamed = "bold magenta"
+deleted = "bold red"
+
+[directory.style]
+default = "bold cyan"
+read_only = "bold red"
+home = "bold blue"
+
+[username.style]
+user = "bold blue"
+root = "bold red"
+
+[hostname.style]
+default = "bold yellow"
+ssh = "bold green"
+
+# ===========================================================================
+# ADVANCED CONFIGURATION
+# ===========================================================================
+
+# Conditional module loading
+[conditional]
+# Only show certain modules in specific directories
+[conditional.docker_context]
+condition = '[[ -f "Dockerfile" || -f "docker-compose.yml" || -d ".docker" ]]'
+format = '[$symbol$context]($style)'
+
+[conditional.kubernetes]
+condition = '[[ -f "kustomization.yaml" || -f "*.yaml" =~ "apiVersion:" || -d "k8s" ]]'
+format = '[$symbol$context \($namespace\)]($style)'
+
+[conditional.python]
+condition = '[[ -f "requirements.txt" || -f "pyproject.toml" || -f "setup.py" || -d "venv" || -d ".venv" ]]'
+format = '[$symbol$version $virtualenv]($style)'
+
+[conditional.nodejs]
+condition = '[[ -f "package.json" || -f "yarn.lock" || -f "package-lock.json" ]]'
+format = '[$symbol$version]($style)'
+
+# Environment variable filters
+[env_var.filters]
+# Filter out sensitive environment variables
+BLUX10K_SECRET = ".*"
+API_KEY = ".*"
+SECRET = ".*"
+TOKEN = ".*"
+PASSWORD = ".*"
+
+# ===========================================================================
+# BLUX10K PERFORMANCE PROFILES
+# ===========================================================================
+
+# Performance profile selection
+[profiles]
+# Minimal profile for slow systems
+[profiles.minimal]
+modules = [
+  "username",
+  "hostname",
+  "directory",
+  "git_branch",
+  "git_status",
+  "character"
+]
+disabled = [
+  "memory_usage",
+  "battery",
+  "time",
+  "custom"
+]
+
+# Standard profile (default)
+[profiles.standard]
+modules = [
+  "username",
+  "hostname",
+  "directory",
+  "git_branch",
+  "git_status",
+  "git_state",
+  "python",
+  "nodejs",
+  "rust",
+  "golang",
+  "docker_context",
+  "kubernetes",
+  "cmd_duration",
+  "jobs",
+  "battery",
+  "time",
+  "custom.blux10k",
+  "custom.k8s_context",
+  "character"
+]
+
+# Full profile for debugging
+[profiles.full]
+modules = "*"  # All modules
+scan_timeout = 60
+command_timeout = 1000
+
+# Apply profile based on system performance
+if [[ $(nproc) -lt 4 ]] || [[ $(free -m | awk '/^Mem:/ {print $2}') -lt 4000 ]]; then
+  profile = "minimal"
+elif [[ -n "$BLUX10K_DEBUG" ]]; then
+  profile = "full"
+else
+  profile = "standard"
+fi
+
+# ===========================================================================
+# INTEGRATION WITH BLUX10K SYSTEM
+# ===========================================================================
+
+# BLUX10K environment integration
+[integration.blux10k]
+# Sync with BLUX10K configuration
+config_path = "$HOME/.config/blux10k/starship.toml"
+auto_sync = true
+sync_interval = 300  # 5 minutes
+
+# Shell integration
+[integration.shell]
+zsh = {
+  precmd_hook = "true",
+  preexec_hook = "true",
+  prompt_char = "true"
+}
+bash = {
+  precmd_hook = "true",
+  preexec_hook = "true"
+}
+fish = {
+  precmd_hook = "true",
+  preexec_hook = "true"
+}
+
+# Terminal integration
+[integration.terminal]
+# Support for various terminals
+hyper = true
+iterm2 = true
+alacritty = true
+kitty = true
+tmux = true
+
+# ===========================================================================
+# FINAL CONFIGURATION
+# ===========================================================================
+
+# Configuration validation
+[validation]
+check_command_timeout = true
+check_unsafe_commands = true
+validate_paths = true
+
+# Error handling
+[error]
+log_file = "$HOME/.cache/starship/error.log"
+max_log_size = "10MB"
+log_level = "warn"
+
+# Cache configuration
+[cache]
+enabled = true
+directory = "$HOME/.cache/starship"
+max_size = "100MB"
+cleanup_interval = 3600
+
+# ===========================================================================
+# BLUX10K SPECIFIC COMMANDS
+# ===========================================================================
+
+# Command to switch profiles
+[custom.profile_switch]
+command = '''
+  current_profile=$(starship explain --profile 2>/dev/null | grep "Profile:" | awk "{print \$2}" || echo "standard")
+  if [[ "$current_profile" == "minimal" ]]; then
+    echo "standard"
+  elif [[ "$current_profile" == "standard" ]]; then
+    echo "full"
+  else
+    echo "minimal"
+  fi
+'''
+when = 'false'  # Disabled by default, enable with keybinding
+format = '[$output]($style)'
+style = 'bold cyan'
+description = 'Switch Starship Profile'
+
+# BLUX10K system health
+[custom.blux10k_health]
+command = 'echo "$(uptime -p | sed "s/up //") • $(free -h | awk "/^Mem:/ {print \$3}") used"'
+when = '[[ -n "$BLUX10K_DEBUG" ]]'
+format = '[🩺 $output]($style)'
+style = 'bold green'
+description = 'BLUX10K System Health'
+shell = ['bash', 'zsh']
+interval = 30
+
+echo "🚀 BLUX10K Starship v4.0.0 Configuration Loaded"
+echo "📊 Profile: $profile"
+echo "⚡ Performance: $(nproc) cores, $(free -h | awk '/^Mem:/ {print $2}') RAM"
