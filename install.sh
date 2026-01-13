@@ -1282,19 +1282,1723 @@ main() {
 # REMAINING FUNCTIONS (from original script)
 # ===========================================================================
 
-# [Include all the remaining functions from your original script here:
-# check_permissions, install_package_manager, check_dependencies,
-# install_core_packages, install_modern_tools, install_fonts,
-# deploy_configurations, post_install_setup, finalize_installation,
-# parse_arguments, show_help, and all supporting functions]
+# Function to check and escalate permissions if needed
+check_permissions() {
+    log_section "Permission Verification"
+    
+    local need_sudo="false"
+    
+    # Check if we have write access to required directories
+    local dirs_to_check=(
+        "$HOME"
+        "${B10K_DIR}"
+        "${BLUX10K_CACHE_DIR}"
+        "${B10K_DATA_DIR}"
+    )
+    
+    for dir in "${dirs_to_check[@]}"; do
+        if [[ ! -w "$dir" ]] && [[ ! -w "$(dirname "$dir")" ]]; then
+            log_debug "Need write access to: $dir"
+            need_sudo="true"
+        fi
+    done
+    
+    # Check if we can install packages
+    case "$PACKAGE_MANAGER" in
+        apt|pacman|dnf|apk|xbps|emerge)
+            if ! command -v sudo >/dev/null 2>&1; then
+                log_warn "sudo not found but may be needed for package installation"
+                need_sudo="true"
+            fi
+            ;;
+        pkg|brew|winget|chocolatey)
+            # These typically don't need sudo for user installations
+            ;;
+    esac
+    
+    # Handle sudo requirements
+    if [[ "$need_sudo" == "true" ]] && [[ "$EUID" -ne 0 ]]; then
+        log_info "Elevated permissions may be required for some operations"
+        
+        if command -v sudo >/dev/null 2>&1; then
+            log_info "Testing sudo access..."
+            if sudo -v; then
+                log_success "sudo access confirmed"
+            else
+                log_warn "sudo access unavailable or requires password"
+                log_info "Some operations may fail without sudo"
+            fi
+        else
+            log_warn "sudo not available, some operations may fail"
+        fi
+    elif [[ "$EUID" -eq 0 ]]; then
+        log_warn "Running as root. Consider running as regular user with sudo."
+    fi
+    
+    return 0
+}
 
-# Note: Due to character limits, I've included the critical new functions.
-# You'll need to merge these with your existing functions.
-# The key additions are:
-# 1. Interactive menu system (show_interactive_menu, select_custom_plugins)
-# 2. Zinit installation & management (install_zinit, install_zsh_plugins_via_zinit, update_zinit_plugins)
-# 3. Prompt selection system (install_prompt_system, install_powerlevel10k, configure_powerlevel10k, install_starship, configure_starship)
-# 4. Update management (run_updates, update_system_packages, update_custom_tools)
+# Function to ensure package manager is available
+install_package_manager() {
+    log_section "Package Manager Setup"
+    
+    case "$PACKAGE_MANAGER" in
+        apt)
+            if ! command -v apt-get >/dev/null 2>&1; then
+                log_error "apt-get not found on Debian-based system"
+                return 1
+            fi
+            log_info "Updating APT cache..."
+            sudo apt update -qq
+            ;;
+            
+        brew)
+            if ! command -v brew >/dev/null 2>&1; then
+                log_info "Installing Homebrew..."
+                /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+                if [[ "$OS_TYPE" == "linux" ]]; then
+                    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+                fi
+            fi
+            log_info "Updating Homebrew..."
+            brew update
+            ;;
+            
+        pacman)
+            if ! command -v pacman >/dev/null 2>&1; then
+                log_error "pacman not found on Arch-based system"
+                return 1
+            fi
+            log_info "Updating pacman database..."
+            sudo pacman -Sy --noconfirm
+            ;;
+            
+        dnf)
+            if ! command -v dnf >/dev/null 2>&1; then
+                log_error "dnf not found on Fedora/RHEL system"
+                return 1
+            fi
+            log_info "Updating DNF cache..."
+            sudo dnf makecache -y
+            ;;
+            
+        pkg)
+            if ! command -v pkg >/dev/null 2>&1; then
+                log_error "pkg not found (Termux)"
+                return 1
+            fi
+            log_info "Updating Termux packages..."
+            pkg update -y
+            ;;
+            
+        winget)
+            if ! command -v winget >/dev/null 2>&1; then
+                log_error "winget not found on Windows"
+                return 1
+            fi
+            ;;
+            
+        chocolatey)
+            if ! command -v choco >/dev/null 2>&1; then
+                log_info "Installing Chocolatey..."
+                powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; \
+                    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; \
+                    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
+            fi
+            ;;
+            
+        *)
+            log_warn "Package manager $PACKAGE_MANAGER may not be fully supported"
+            ;;
+    esac
+    
+    log_success "Package manager configured"
+    return 0
+}
+
+# Function to check and install required dependencies
+check_dependencies() {
+    log_section "Dependency Check"
+    
+    local missing_deps=()
+    local optional_deps=()
+    
+    # Essential dependencies
+    if ! command -v git >/dev/null 2>&1; then
+        missing_deps+=("git")
+    fi
+    
+    if ! command -v curl >/dev/null 2>&1; then
+        missing_deps+=("curl")
+    fi
+    
+    if ! command -v zsh >/dev/null 2>&1; then
+        missing_deps+=("zsh")
+    fi
+    
+    # Optional but recommended
+    if ! command -v wget >/dev/null 2>&1; then
+        optional_deps+=("wget")
+    fi
+    
+    if ! command -v unzip >/dev/null 2>&1; then
+        optional_deps+=("unzip")
+    fi
+    
+    if ! command -v tar >/dev/null 2>&1; then
+        optional_deps+=("tar")
+    fi
+    
+    if ! command -v gzip >/dev/null 2>&1; then
+        optional_deps+=("gzip")
+    fi
+    
+    # Platform-specific dependencies
+    case "$OS_TYPE" in
+        macos)
+            if ! command -v xcode-select >/dev/null 2>&1; then
+                optional_deps+=("xcode-select (Command Line Tools)")
+            fi
+            ;;
+        windows)
+            if ! command -v pwsh >/dev/null 2>&1; then
+                optional_deps+=("PowerShell 7+")
+            fi
+            ;;
+    esac
+    
+    # Report missing dependencies
+    if [[ ${#missing_deps[@]} -gt 0 ]]; then
+        log_warn "Missing essential dependencies: ${missing_deps[*]}"
+        log_info "Attempting to install missing dependencies..."
+        
+        for dep in "${missing_deps[@]}"; do
+            install_dependency "$dep"
+        done
+        
+        # Verify installation
+        local still_missing=()
+        for dep in "${missing_deps[@]}"; do
+            if ! command -v "$dep" >/dev/null 2>&1; then
+                still_missing+=("$dep")
+            fi
+        done
+        
+        if [[ ${#still_missing[@]} -gt 0 ]]; then
+            log_error "Failed to install: ${still_missing[*]}"
+            log_error "Please install these dependencies manually and restart the installer"
+            return 1
+        fi
+    fi
+    
+    # Install optional dependencies
+    if [[ ${#optional_deps[@]} -gt 0 ]]; then
+        log_info "Optional dependencies: ${optional_deps[*]}"
+        read -rp "Install optional dependencies? (y/N): " opt_choice
+        if [[ "$opt_choice" =~ ^[Yy]$ ]]; then
+            for dep in "${optional_deps[@]}"; do
+                install_dependency "$dep"
+            done
+        fi
+    fi
+    
+    log_success "Dependencies verified"
+    return 0
+}
+
+# Helper function to install a single dependency
+install_dependency() {
+    local dep="$1"
+    
+    case "$PACKAGE_MANAGER" in
+        apt)
+            sudo apt install -y "$dep"
+            ;;
+        brew)
+            brew install "$dep"
+            ;;
+        pacman)
+            sudo pacman -S --noconfirm "$dep"
+            ;;
+        dnf)
+            sudo dnf install -y "$dep"
+            ;;
+        pkg)
+            pkg install -y "$dep"
+            ;;
+        winget)
+            winget install --id "$dep" --silent
+            ;;
+        chocolatey)
+            choco install "$dep" -y
+            ;;
+        apk)
+            sudo apk add "$dep"
+            ;;
+        xbps)
+            sudo xbps-install -y "$dep"
+            ;;
+        emerge)
+            sudo emerge --ask n "$dep"
+            ;;
+        *)
+            log_warn "Cannot install $dep: unsupported package manager"
+            return 1
+            ;;
+    esac
+}
+
+# Function to install core system packages
+install_core_packages() {
+    log_section "Core Packages Installation"
+    
+    local packages=()
+    
+    # Define packages based on platform
+    case "$OS_TYPE" in
+        debian|ubuntu|linuxmint)
+            packages=(
+                "build-essential"
+                "libssl-dev"
+                "zlib1g-dev"
+                "libbz2-dev"
+                "libreadline-dev"
+                "libsqlite3-dev"
+                "libncursesw5-dev"
+                "xz-utils"
+                "tk-dev"
+                "libffi-dev"
+                "liblzma-dev"
+                "python3-openssl"
+            )
+            ;;
+            
+        arch|manjaro)
+            packages=(
+                "base-devel"
+                "openssl"
+                "zlib"
+                "bzip2"
+                "readline"
+                "sqlite"
+                "ncurses"
+                "xz"
+                "tk"
+                "libffi"
+                "lzma"
+            )
+            ;;
+            
+        fedora|centos|rhel)
+            packages=(
+                "gcc"
+                "make"
+                "openssl-devel"
+                "zlib-devel"
+                "bzip2-devel"
+                "readline-devel"
+                "sqlite-devel"
+                "ncurses-devel"
+                "xz-devel"
+                "tk-devel"
+                "libffi-devel"
+                "lzma-devel"
+            )
+            ;;
+            
+        macos)
+            packages=()  # Handled by Homebrew in modern_tools
+            ;;
+            
+        termux)
+            packages=(
+                "binutils"
+                "clang"
+                "coreutils"
+                "curl"
+                "git"
+                "nodejs"
+                "python"
+                "rust"
+                "zsh"
+            )
+            ;;
+            
+        windows)
+            packages=()  # Handled by winget/choco
+            ;;
+    esac
+    
+    # Install packages
+    if [[ ${#packages[@]} -gt 0 ]]; then
+        log_info "Installing core packages: ${packages[*]}"
+        
+        case "$PACKAGE_MANAGER" in
+            apt)
+                sudo apt install -y "${packages[@]}"
+                ;;
+            pacman)
+                sudo pacman -S --noconfirm "${packages[@]}"
+                ;;
+            dnf)
+                sudo dnf install -y "${packages[@]}"
+                ;;
+            pkg)
+                pkg install -y "${packages[@]}"
+                ;;
+            *)
+                log_warn "Core packages installation not implemented for $PACKAGE_MANAGER"
+                ;;
+        esac
+        
+        log_success "Core packages installed"
+    else
+        log_info "No core packages required for this platform"
+    fi
+}
+
+# Function to install modern development tools
+install_modern_tools() {
+    log_section "Modern Tools Installation"
+    
+    local tools_to_install=()
+    
+    # Check which tools are already installed
+    declare -A tools=(
+        ["bat"]="bat"          # Better cat
+        ["exa"]="exa"          # Better ls
+        ["fd"]="fd-find"       # Better find
+        ["ripgrep"]="ripgrep"  # Better grep
+        ["fzf"]="fzf"          # Fuzzy finder
+        ["htop"]="htop"        # Process viewer
+        ["jq"]="jq"            # JSON processor
+        ["yq"]="yq"            # YAML processor
+        ["zoxide"]="zoxide"    # Smarter cd
+        ["delta"]="git-delta"  # Better git diff
+        ["dust"]="du-dust"     # Better du
+        ["procs"]="procs"      # Better ps
+        ["sd"]="sd"            # Better sed
+        ["tealdeer"]="tealdeer" # Better tldr
+        ["bottom"]="bottom"    # Better top
+    )
+    
+    # Platform-specific package names
+    declare -A package_names
+    case "$PACKAGE_MANAGER" in
+        apt)
+            package_names=(
+                ["bat"]="bat"
+                ["exa"]="exa"
+                ["fd"]="fd-find"
+                ["ripgrep"]="ripgrep"
+                ["fzf"]="fzf"
+                ["htop"]="htop"
+                ["jq"]="jq"
+                ["yq"]="yq"
+                ["zoxide"]="zoxide"
+                ["delta"]="git-delta"
+                ["dust"]="du-dust"
+                ["procs"]="procs"
+                ["sd"]="sd"
+                ["tealdeer"]="tealdeer"
+                ["bottom"]="bottom"
+            )
+            ;;
+        brew)
+            package_names=(
+                ["bat"]="bat"
+                ["exa"]="exa"
+                ["fd"]="fd"
+                ["ripgrep"]="ripgrep"
+                ["fzf"]="fzf"
+                ["htop"]="htop"
+                ["jq"]="jq"
+                ["yq"]="yq"
+                ["zoxide"]="zoxide"
+                ["delta"]="git-delta"
+                ["dust"]="dust"
+                ["procs"]="procs"
+                ["sd"]="sd"
+                ["tealdeer"]="tealdeer"
+                ["bottom"]="bottom"
+            )
+            ;;
+        pacman)
+            package_names=(
+                ["bat"]="bat"
+                ["exa"]="exa"
+                ["fd"]="fd"
+                ["ripgrep"]="ripgrep"
+                ["fzf"]="fzf"
+                ["htop"]="htop"
+                ["jq"]="jq"
+                ["yq"]="yq-go"
+                ["zoxide"]="zoxide"
+                ["delta"]="git-delta"
+                ["dust"]="dust"
+                ["procs"]="procs"
+                ["sd"]="sd"
+                ["tealdeer"]="tealdeer"
+                ["bottom"]="bottom"
+            )
+            ;;
+        dnf)
+            package_names=(
+                ["bat"]="bat"
+                ["exa"]="exa"
+                ["fd"]="fd-find"
+                ["ripgrep"]="ripgrep"
+                ["fzf"]="fzf"
+                ["htop"]="htop"
+                ["jq"]="jq"
+                ["yq"]="yq"
+                ["zoxide"]="zoxide"
+                ["delta"]="git-delta"
+                ["dust"]="dust"
+                ["procs"]="procs"
+                ["sd"]="sd"
+                ["tealdeer"]="tealdeer"
+                ["bottom"]="bottom"
+            )
+            ;;
+        pkg)
+            package_names=(
+                ["bat"]="bat"
+                ["exa"]="exa"
+                ["fd"]="fd"
+                ["ripgrep"]="ripgrep"
+                ["fzf"]="fzf"
+                ["htop"]="htop"
+                ["jq"]="jq"
+                ["yq"]="yq"
+                ["zoxide"]="zoxide"
+                ["delta"]="git-delta"
+                ["dust"]="dust"
+                ["procs"]="procs"
+                ["sd"]="sd"
+                ["tealdeer"]="tealdeer"
+                ["bottom"]="bottom"
+            )
+            ;;
+    esac
+    
+    # Check which tools are missing
+    for tool in "${!tools[@]}"; do
+        if ! command -v "$tool" >/dev/null 2>&1; then
+            if [[ -n "${package_names[$tool]:-}" ]]; then
+                tools_to_install+=("${package_names[$tool]}")
+            else
+                tools_to_install+=("$tool")
+            fi
+        fi
+    done
+    
+    # Install missing tools
+    if [[ ${#tools_to_install[@]} -gt 0 ]]; then
+        log_info "Installing modern tools: ${tools_to_install[*]}"
+        
+        case "$PACKAGE_MANAGER" in
+            apt)
+                sudo apt install -y "${tools_to_install[@]}"
+                ;;
+            brew)
+                brew install "${tools_to_install[@]}"
+                ;;
+            pacman)
+                sudo pacman -S --noconfirm "${tools_to_install[@]}"
+                ;;
+            dnf)
+                sudo dnf install -y "${tools_to_install[@]}"
+                ;;
+            pkg)
+                pkg install -y "${tools_to_install[@]}"
+                ;;
+            winget)
+                for tool in "${tools_to_install[@]}"; do
+                    winget install --id "$tool" --silent 2>/dev/null || true
+                done
+                ;;
+            chocolatey)
+                for tool in "${tools_to_install[@]}"; do
+                    choco install "$tool" -y 2>/dev/null || true
+                done
+                ;;
+            *)
+                log_warn "Modern tools installation not implemented for $PACKAGE_MANAGER"
+                ;;
+        esac
+        
+        # Special handling for tools that might need different installation methods
+        install_rust_tools
+        install_go_tools
+        install_python_tools
+        
+        log_success "Modern tools installed"
+    else
+        log_info "All modern tools are already installed"
+    fi
+}
+
+# Install Rust-based tools via cargo if available
+install_rust_tools() {
+    if command -v cargo >/dev/null 2>&1; then
+        log_info "Installing additional Rust tools via cargo..."
+        
+        local rust_tools=(
+            "starship"     # Cross-shell prompt (if not already installed)
+            "du-dust"      # Better du
+            "git-delta"    # Better git diff
+            "zoxide"       # Smarter cd
+        )
+        
+        for tool in "${rust_tools[@]}"; do
+            if ! command -v "$tool" >/dev/null 2>&1; then
+                cargo install "$tool" 2>/dev/null || true
+            fi
+        done
+    fi
+}
+
+# Install Go-based tools
+install_go_tools() {
+    if command -v go >/dev/null 2>&1; then
+        log_info "Installing Go tools..."
+        
+        # Example Go tools (uncomment if needed)
+        # go install github.com/xxx/xxx@latest
+        :
+    fi
+}
+
+# Install Python-based tools
+install_python_tools() {
+    if command -v pip3 >/dev/null 2>&1; then
+        log_info "Installing Python tools..."
+        
+        local python_tools=(
+            "httpie"        # User-friendly curl replacement
+            "pygments"      # Syntax highlighting
+            "rich"          # Rich text formatting
+            "tqdm"          # Progress bars
+        )
+        
+        for tool in "${python_tools[@]}"; do
+            pip3 install --user "$tool" 2>/dev/null || true
+        done
+    fi
+}
+
+# Function to install Nerd Fonts
+install_fonts() {
+    log_section "Font Installation"
+    
+    local font_dir=""
+    local font_url="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.0.2/"
+    
+    # Determine font directory based on platform
+    case "$OS_TYPE" in
+        linux|debian|ubuntu|arch|fedora)
+            font_dir="$HOME/.local/share/fonts"
+            if [[ -n "${IS_WSL:-}" ]]; then
+                log_info "WSL detected - fonts installed via Windows"
+                font_dir="/mnt/c/Windows/Fonts"
+            fi
+            ;;
+        macos)
+            font_dir="$HOME/Library/Fonts"
+            ;;
+        windows)
+            font_dir="C:/Windows/Fonts"
+            ;;
+        termux)
+            font_dir="$HOME/.termux/fonts"
+            ;;
+        *)
+            font_dir="$HOME/.local/share/fonts"
+            ;;
+    esac
+    
+    # Create font directory
+    mkdir -p "$font_dir"
+    
+    # List of recommended Nerd Fonts
+    local fonts=(
+        "CascadiaCode"      # Windows Terminal default
+        "FiraCode"          # Popular programming font
+        "Meslo"             # Powerlevel10k recommended
+        "JetBrainsMono"     # IDE-like font
+        "Hack"              # Clear and readable
+    )
+    
+    # Check which fonts are already installed
+    local fonts_to_install=()
+    for font in "${fonts[@]}"; do
+        local font_file="${font_dir}/${font}*.ttf"
+        if ! ls "$font_file" 2>/dev/null | grep -q "\.ttf$"; then
+            fonts_to_install+=("$font")
+        fi
+    done
+    
+    if [[ ${#fonts_to_install[@]} -eq 0 ]]; then
+        log_info "Nerd Fonts are already installed"
+        return 0
+    fi
+    
+    log_info "Installing Nerd Fonts: ${fonts_to_install[*]}"
+    
+    # Install fonts
+    for font in "${fonts_to_install[@]}"; do
+        local font_name="${font// /%20}"
+        local font_zip="${font_name}.zip"
+        local download_url="${font_url}${font_zip}"
+        
+        log_info "Downloading ${font}..."
+        
+             if command -v wget >/dev/null 2>&1; then
+            wget -q --show-progress -O "/tmp/${font_zip}" "$download_url"
+        elif command -v curl >/dev/null 2>&1; then
+            curl -L -# -o "/tmp/${font_zip}" "$download_url"
+        else
+            log_warn "Cannot download font: wget/curl not available"
+            continue
+        fi
+        
+        # Extract and install
+        if command -v unzip >/dev/null 2>&1; then
+            unzip -q -o "/tmp/${font_zip}" -d "$font_dir"
+            log_success "Installed ${font}"
+        else
+            log_warn "Cannot extract font: unzip not available"
+        fi
+        
+        # Cleanup
+        rm -f "/tmp/${font_zip}"
+    done
+    
+    # Update font cache (Linux)
+    if [[ "$OS_TYPE" == "linux" ]] && [[ -z "${IS_WSL:-}" ]]; then
+        if command -v fc-cache >/dev/null 2>&1; then
+            fc-cache -fv "$font_dir"
+            log_success "Font cache updated"
+        fi
+    fi
+    
+    log_success "Fonts installed to ${font_dir}"
+}
+
+# Function to deploy all configurations
+deploy_configurations() {
+    log_section "Configuration Deployment"
+    
+    # Create all necessary directories
+    local dirs_to_create=(
+        "$B10K_DIR"
+        "$BLUX10K_CONFIG_DIR"
+        "$BLUX10K_CACHE_DIR"
+        "$BLUX10K_LOG_DIR"
+        "$B10K_DATA_DIR"
+        "$B10K_DIR/modules"
+        "$B10K_DIR/modules/zsh"
+        "$B10K_DIR/modules/bash"
+        "$B10K_DIR/modules/tools"
+        "$B10K_DIR/themes"
+        "$B10K_DIR/plugins"
+    )
+    
+    log_info "Creating directory structure..."
+    for dir in "${dirs_to_create[@]}"; do
+        mkdir -p "$dir"
+        log_debug "Created: $dir"
+    done
+    
+    # Deploy main blux10k configuration
+    deploy_blux10k_config
+    
+    # Deploy shell configurations
+    deploy_shell_configs
+    
+    # Deploy tool configurations
+    deploy_tool_configs
+    
+    # Deploy theme configurations
+    deploy_theme_configs
+    
+    log_success "All configurations deployed"
+}
+
+# Deploy main blux10k configuration
+deploy_blux10k_config() {
+    log_info "Deploying BLUX10K core configuration..."
+    
+    local blux10k_zsh="${B10K_DIR}/blux10k.zsh"
+    
+    cat > "$blux10k_zsh" << 'EOF'
+#!/usr/bin/env zsh
+# BLUX10K Main Configuration
+# Generated: $(date)
+
+# ===========================================================================
+# ENVIRONMENT VARIABLES
+# ===========================================================================
+
+export BLUX10K_VERSION="4.0.0"
+export BLUX10K_ROOT="${XDG_CONFIG_HOME:-$HOME/.config}/blux10k"
+export BLUX10K_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/blux10k"
+export BLUX10K_DATA="${XDG_DATA_HOME:-$HOME/.local/share}/blux10k"
+
+# Add BLUX10K binaries to PATH
+export PATH="${BLUX10K_ROOT}/bin:${PATH}"
+
+# ===========================================================================
+# SOURCE MODULES
+# ===========================================================================
+
+# Source utility functions
+if [[ -f "${BLUX10K_ROOT}/modules/core/utils.zsh" ]]; then
+    source "${BLUX10K_ROOT}/modules/core/utils.zsh"
+fi
+
+# Source plugin configuration
+if [[ -f "${BLUX10K_ROOT}/modules/zsh/plugins.zsh" ]]; then
+    source "${BLUX10K_ROOT}/modules/zsh/plugins.zsh"
+fi
+
+# Source aliases
+if [[ -f "${BLUX10K_ROOT}/modules/core/aliases.zsh" ]]; then
+    source "${BLUX10K_ROOT}/modules/core/aliases.zsh"
+fi
+
+# Source functions
+if [[ -f "${BLUX10K_ROOT}/modules/core/functions.zsh" ]]; then
+    source "${BLUX10K_ROOT}/modules/core/functions.zsh"
+fi
+
+# Source completions
+if [[ -f "${BLUX10K_ROOT}/modules/zsh/completions.zsh" ]]; then
+    source "${BLUX10K_ROOT}/modules/zsh/completions.zsh"
+fi
+
+# ===========================================================================
+# SHELL OPTIONS
+# ===========================================================================
+
+# Setopt options
+setopt autocd               # Change directory without cd
+setopt extendedglob         # Extended globbing
+setopt nomatch              # Error on no matches
+setopt notify               # Report job status immediately
+setopt histignorealldups    # Ignore duplicates in history
+setopt sharehistory         # Share history between sessions
+setopt incappendhistory     # Append to history incrementally
+
+# History configuration
+HISTSIZE=10000
+SAVEHIST=10000
+HISTFILE="${ZDOTDIR:-$HOME}/.zsh_history"
+
+# ===========================================================================
+# KEY BINDINGS
+# ===========================================================================
+
+# Use emacs keybindings
+bindkey -e
+
+# Home/End keys
+bindkey '^[[H' beginning-of-line
+bindkey '^[[F' end-of-line
+
+# Delete key
+bindkey '^[[3~' delete-char
+
+# History search
+autoload -U up-line-or-beginning-search
+autoload -U down-line-or-beginning-search
+zle -N up-line-or-beginning-search
+zle -N down-line-or-beginning-search
+bindkey '^[[A' up-line-or-beginning-search
+bindkey '^[[B' down-line-or-beginning-search
+
+# ===========================================================================
+# COMPLETION SYSTEM
+# ===========================================================================
+
+autoload -Uz compinit
+compinit
+
+# Completion cache
+zstyle ':completion:*' use-cache on
+zstyle ':completion:*' cache-path "${BLUX10K_CACHE}/zcompcache"
+
+# Menu selection
+zstyle ':completion:*' menu select
+zstyle ':completion:*' group-name ''
+zstyle ':completion:*' list-colors ''
+
+# Case-insensitive completion
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
+
+# ===========================================================================
+# PLUGIN-SPECIFIC CONFIGURATIONS
+# ===========================================================================
+
+# ZSH-Autosuggestions
+ZSH_AUTOSUGGEST_STRATEGY=(history completion)
+ZSH_AUTOSUGGEST_USE_ASYNC=true
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=8"
+
+# ZSH-Syntax-Highlighting
+ZSH_HIGHLIGHT_HIGHLIGHTERS=(main brackets pattern cursor)
+ZSH_HIGHLIGHT_STYLES[default]=none
+ZSH_HIGHLIGHT_STYLES[unknown-token]=fg=red,bold
+ZSH_HIGHLIGHT_STYLES[reserved-word]=fg=yellow
+ZSH_HIGHLIGHT_STYLES[alias]=fg=green
+ZSH_HIGHLIGHT_STYLES[builtin]=fg=green
+ZSH_HIGHLIGHT_STYLES[function]=fg=green
+ZSH_HIGHLIGHT_STYLES[command]=fg=green
+ZSH_HIGHLIGHT_STYLES[precommand]=fg=green,underline
+ZSH_HIGHLIGHT_STYLES[commandseparator]=none
+ZSH_HIGHLIGHT_STYLES[hashed-command]=fg=green
+ZSH_HIGHLIGHT_STYLES[path]=underline
+ZSH_HIGHLIGHT_STYLES[path_pathseparator]=
+ZSH_HIGHLIGHT_STYLES[path_prefix]=underline
+ZSH_HIGHLIGHT_STYLES[path_prefix_pathseparator]=
+ZSH_HIGHLIGHT_STYLES[globbing]=fg=blue
+ZSH_HIGHLIGHT_STYLES[history-expansion]=fg=blue
+ZSH_HIGHLIGHT_STYLES[single-hyphen-option]=none
+ZSH_HIGHLIGHT_STYLES[double-hyphen-option]=none
+ZSH_HIGHLIGHT_STYLES[back-quoted-argument]=none
+ZSH_HIGHLIGHT_STYLES[single-quoted-argument]=fg=yellow
+ZSH_HIGHLIGHT_STYLES[double-quoted-argument]=fg=yellow
+ZSH_HIGHLIGHT_STYLES[dollar-quoted-argument]=fg=yellow
+ZSH_HIGHLIGHT_STYLES[dollar-double-quoted-argument]=fg=cyan
+ZSH_HIGHLIGHT_STYLES[back-double-quoted-argument]=fg=cyan
+ZSH_HIGHLIGHT_STYLES[back-dollar-quoted-argument]=fg=cyan
+ZSH_HIGHLIGHT_STYLES[assign]=none
+ZSH_HIGHLIGHT_STYLES[redirection]=fg=yellow
+ZSH_HIGHLIGHT_STYLES[comment]=fg=black,bold
+ZSH_HIGHLIGHT_STYLES[arg0]=fg=green
+
+# ===========================================================================
+# FINALIZATION
+# ===========================================================================
+
+# Load prompt system (will be added by installer)
+# Prompt configuration is added separately based on selection
+
+# Clean up
+unset -f __blux10k_source_module
+
+# Success message
+if [[ -o interactive ]]; then
+    echo -e "BLUX10K v${BLUX10K_VERSION} loaded successfully! 🚀"
+fi
+EOF
+    
+    # Make it executable
+    chmod +x "$blux10k_zsh"
+    
+    log_success "BLUX10K core configuration created"
+}
+
+# Deploy shell-specific configurations
+deploy_shell_configs() {
+    log_info "Deploying shell configurations..."
+    
+    # ZSH configuration
+    local zshrc_file="$HOME/.zshrc"
+    local zshrc_backup="${zshrc_file}.backup.$(date +%Y%m%d_%H%M%S)"
+    
+    # Backup existing .zshrc
+    if [[ -f "$zshrc_file" ]]; then
+        cp "$zshrc_file" "$zshrc_backup"
+        log_info "Backed up existing .zshrc to $zshrc_backup"
+    fi
+    
+    # Create new .zshrc
+    cat > "$zshrc_file" << EOF
+#!/usr/bin/env zsh
+# BLUX10K Enhanced ZSH Configuration
+# Generated: $(date)
+
+# Source BLUX10K main configuration
+if [[ -f "${B10K_DIR}/blux10k.zsh" ]]; then
+    source "${B10K_DIR}/blux10k.zsh"
+else
+    echo "BLUX10K configuration not found at ${B10K_DIR}/blux10k.zsh"
+    echo "Please run the installer again or check your installation."
+fi
+
+# User customizations (won't be overwritten)
+if [[ -f "\${ZDOTDIR:-\$HOME}/.zshrc.local" ]]; then
+    source "\${ZDOTDIR:-\$HOME}/.zshrc.local"
+fi
+
+# Platform-specific configurations
+case "\$(uname -s)" in
+    Darwin*)
+        if [[ -f "\${BLUX10K_ROOT}/modules/platform/macos.zsh" ]]; then
+            source "\${BLUX10K_ROOT}/modules/platform/macos.zsh"
+        fi
+        ;;
+    Linux*)
+        if [[ -f "\${BLUX10K_ROOT}/modules/platform/linux.zsh" ]]; then
+            source "\${BLUX10K_ROOT}/modules/platform/linux.zsh"
+        fi
+        ;;
+    MINGW*|MSYS*|CYGWIN*)
+        if [[ -f "\${BLUX10K_ROOT}/modules/platform/windows.zsh" ]]; then
+            source "\${BLUX10K_ROOT}/modules/platform/windows.zsh"
+        fi
+        ;;
+esac
+
+# Environment-specific configurations
+if [[ -n "\${TERMUX_VERSION:-}" ]]; then
+    if [[ -f "\${BLUX10K_ROOT}/modules/platform/termux.zsh" ]]; then
+        source "\${BLUX10K_ROOT}/modules/platform/termux.zsh"
+    fi
+fi
+
+if [[ -n "\${WSL_DISTRO_NAME:-}" ]] || grep -qi microsoft /proc/version 2>/dev/null; then
+    if [[ -f "\${BLUX10K_ROOT}/modules/platform/wsl.zsh" ]]; then
+        source "\${BLUX10K_ROOT}/modules/platform/wsl.zsh"
+    fi
+fi
+EOF
+    
+    # Bash configuration (for systems where bash is primary shell)
+    local bashrc_file="$HOME/.bashrc"
+    if [[ -f "$bashrc_file" ]]; then
+        # Add BLUX10K source line if not already present
+        if ! grep -q "blux10k" "$bashrc_file"; then
+            cat >> "$bashrc_file" << 'EOF'
+
+# BLUX10K Configuration
+if [[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/blux10k/bashrc" ]]; then
+    source "${XDG_CONFIG_HOME:-$HOME/.config}/blux10k/bashrc"
+fi
+EOF
+        fi
+        
+        # Create bash-specific configuration
+        local blux10k_bash="${B10K_DIR}/bashrc"
+        cat > "$blux10k_bash" << 'EOF'
+#!/usr/bin/env bash
+# BLUX10K Bash Configuration
+
+# Source common aliases and functions
+if [[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/blux10k/modules/core/aliases.sh" ]]; then
+    source "${XDG_CONFIG_HOME:-$HOME/.config}/blux10k/modules/core/aliases.sh"
+fi
+
+if [[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/blux10k/modules/core/functions.sh" ]]; then
+    source "${XDG_CONFIG_HOME:-$HOME/.config}/blux10k/modules/core/functions.sh"
+fi
+
+# Bash-specific configurations
+export HISTSIZE=10000
+export HISTFILESIZE=20000
+export HISTCONTROL=ignoreboth:erasedups
+shopt -s histappend
+shopt -s checkwinsize
+shopt -s globstar
+shopt -s dotglob
+shopt -s extglob
+
+# Enable programmable completion features
+if ! shopt -oq posix; then
+  if [[ -f /usr/share/bash-completion/bash_completion ]]; then
+    source /usr/share/bash-completion/bash_completion
+  elif [[ -f /etc/bash_completion ]]; then
+    source /etc/bash_completion
+  fi
+fi
+
+# Starship prompt for bash (if installed)
+if command -v starship >/dev/null 2>&1 && [[ "$BLUX10K_PROMPT_SYSTEM" == "starship" ]]; then
+    eval "$(starship init bash)"
+fi
+EOF
+    fi
+    
+    log_success "Shell configurations deployed"
+}
+
+# Deploy tool configurations
+deploy_tool_configs() {
+    log_info "Deploying tool configurations..."
+    
+    # Git configuration
+    local git_config="${B10K_DIR}/modules/tools/git.zsh"
+    cat > "$git_config" << 'EOF'
+#!/usr/bin/env zsh
+# Git Configuration
+
+# Aliases
+alias g='git'
+alias ga='git add'
+alias gaa='git add --all'
+alias gb='git branch'
+alias gc='git commit'
+alias gcm='git commit -m'
+alias gco='git checkout'
+alias gd='git diff'
+alias gf='git fetch'
+alias gl='git log'
+alias gm='git merge'
+alias gp='git push'
+alias gpl='git pull'
+alias gr='git remote'
+alias gs='git status'
+alias gst='git status'
+alias gsw='git switch'
+
+# Functions
+gac() {
+    git add . && git commit -m "$1"
+}
+
+gacp() {
+    git add . && git commit -m "$1" && git push
+}
+
+gclean() {
+    git fetch --prune && git branch --merged | grep -v "\*" | xargs -n 1 git branch -d
+}
+
+# Git completion
+autoload -Uz compinit && compinit
+EOF
+    
+    # Docker configuration
+    local docker_config="${B10K_DIR}/modules/tools/docker.zsh"
+    cat > "$docker_config" << 'EOF'
+#!/usr/bin/env zsh
+# Docker Configuration
+
+# Aliases
+alias d='docker'
+alias dc='docker-compose'
+alias di='docker images'
+alias dps='docker ps'
+alias dpsa='docker ps -a'
+alias drm='docker rm'
+alias drmi='docker rmi'
+alias dstop='docker stop'
+alias dstart='docker start'
+alias dlog='docker logs'
+alias dexec='docker exec -it'
+
+# Functions
+dclean() {
+    docker system prune -a -f
+}
+
+dstopall() {
+    docker stop $(docker ps -q)
+}
+
+drmall() {
+    docker rm $(docker ps -a -q)
+}
+EOF
+    
+    # Kubernetes configuration
+    local k8s_config="${B10K_DIR}/modules/tools/kubernetes.zsh"
+    cat > "$k8s_config" << 'EOF'
+#!/usr/bin/env zsh
+# Kubernetes Configuration
+
+# Aliases
+alias k='kubectl'
+alias ka='kubectl apply'
+alias kd='kubectl describe'
+alias ke='kubectl edit'
+alias kg='kubectl get'
+alias klog='kubectl logs'
+alias kpf='kubectl port-forward'
+alias kx='kubectl exec -it'
+
+# Context and namespace helpers
+alias kc='kubectl config use-context'
+alias kn='kubectl config set-context --current --namespace'
+
+# Completion
+if command -v kubectl >/dev/null 2>&1; then
+    source <(kubectl completion zsh)
+fi
+EOF
+    
+    log_success "Tool configurations deployed"
+}
+
+# Deploy theme configurations
+deploy_theme_configs() {
+    log_info "Deploying theme configurations..."
+    
+    # Create theme directory
+    local themes_dir="${B10K_DIR}/themes"
+    mkdir -p "$themes_dir"
+    
+    # Powerlevel10k configuration
+    local p10k_config="${themes_dir}/p10k-config.zsh"
+    if [[ ! -f "$HOME/.p10k.zsh" ]]; then
+        cat > "$p10k_config" << 'EOF'
+#!/usr/bin/env zsh
+# Powerlevel10k Configuration
+
+# Enable Powerlevel10k instant prompt
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# Load powerlevel10k
+source "${XDG_DATA_HOME:-$HOME/.local/share}/blux10k/p10k/powerlevel10k/powerlevel10k.zsh-theme"
+
+# Default configuration
+POWERLEVEL9K_MODE="nerdfont-complete"
+POWERLEVEL9K_PROMPT_ON_NEWLINE=true
+POWERLEVEL9K_RPROMPT_ON_NEWLINE=false
+POWERLEVEL9K_MULTILINE_FIRST_PROMPT_PREFIX="%{%F{249}%}\u250f"
+POWERLEVEL9K_MULTILINE_LAST_PROMPT_PREFIX="%{%F{249}%}\u2517%{%F{default}%} "
+
+# Left prompt segments
+POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(
+    context
+    dir
+    vcs
+    newline
+    prompt_char
+)
+
+# Right prompt segments
+POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(
+    status
+    command_execution_time
+    background_jobs
+    time
+)
+
+# Segment configurations
+POWERLEVEL9K_CONTEXT_DEFAULT_FOREGROUND="white"
+POWERLEVEL9K_DIR_HOME_FOREGROUND="white"
+POWERLEVEL9K_DIR_HOME_SUBFOLDER_FOREGROUND="white"
+POWERLEVEL9K_DIR_DEFAULT_FOREGROUND="white"
+
+# VCS segment
+POWERLEVEL9K_VCS_CLEAN_FOREGROUND="green"
+POWERLEVEL9K_VCS_UNTRACKED_FOREGROUND="yellow"
+POWERLEVEL9K_VCS_MODIFIED_FOREGROUND="red"
+
+# Time segment
+POWERLEVEL9K_TIME_FORMAT="%D{%H:%M:%S}"
+POWERLEVEL9K_TIME_FOREGROUND="white"
+POWERLEVEL9K_TIME_BACKGROUND="black"
+
+# Prompt character
+POWERLEVEL9K_PROMPT_CHAR_OK_{VIINS,VICMD,VIVIS,VIOWR}_FOREGROUND="green"
+POWERLEVEL9K_PROMPT_CHAR_ERROR_{VIINS,VICMD,VIVIS,VIOWR}_FOREGROUND="red"
+
+# Command execution time
+POWERLEVEL9K_COMMAND_EXECUTION_TIME_THRESHOLD=1
+POWERLEVEL9K_COMMAND_EXECUTION_TIME_PRECISION=2
+EOF
+        
+        # Symlink to home directory
+        ln -sf "$p10k_config" "$HOME/.p10k.zsh"
+    fi
+    
+    # Starship configuration already created in configure_starship function
+    
+    log_success "Theme configurations deployed"
+}
+
+# Function for post-installation setup
+post_install_setup() {
+    log_section "Post-Installation Setup"
+    
+    # Set default shell to ZSH if available
+    if command -v zsh >/dev/null 2>&1 && [[ "$SHELL" != "$(which zsh)" ]]; then
+        log_info "Setting ZSH as default shell..."
+        if chsh -s "$(which zsh)" 2>/dev/null; then
+            log_success "Default shell changed to ZSH"
+        else
+            log_warn "Could not change default shell. You may need to run: chsh -s $(which zsh)"
+        fi
+    fi
+    
+    # Create update script
+    create_update_script
+    
+    # Create uninstall script
+    create_uninstall_script
+    
+    # Set permissions
+    set_permissions
+    
+    # Generate report
+    generate_installation_report
+    
+    log_success "Post-installation setup completed"
+}
+
+# Create update script
+create_update_script() {
+    log_info "Creating update script..."
+    
+    local update_script="${B10K_DIR}/update.sh"
+
+    cat > "$update_script" << 'EOF'
+#!/usr/bin/env bash
+# BLUX10K Update Script
+
+set -euo pipefail
+
+BLUX10K_ROOT="${XDG_CONFIG_HOME:-$HOME/.config}/blux10k"
+BLUX10K_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/blux10k"
+LOG_FILE="${BLUX10K_CACHE}/logs/update-$(date +%Y%m%d-%H%M%S).log"
+
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+echo "=== BLUX10K Update Started: $(date) ==="
+
+# Update BLUX10K itself
+echo "Updating BLUX10K configuration..."
+cd "$BLUX10K_ROOT" || exit 1
+if [[ -d ".git" ]]; then
+    git pull origin main
+else
+    echo "BLUX10K not installed via git, skipping update"
+fi
+
+# Update Zinit plugins
+echo "Updating Zinit plugins..."
+if command -v zinit >/dev/null 2>&1; then
+    zinit update --all --parallel
+fi
+
+# Update Powerlevel10k
+if [[ -d "${XDG_DATA_HOME:-$HOME/.local/share}/blux10k/p10k/powerlevel10k" ]]; then
+    echo "Updating Powerlevel10k..."
+    git -C "${XDG_DATA_HOME:-$HOME/.local/share}/blux10k/p10k/powerlevel10k" pull --ff-only
+fi
+
+# Update system packages
+echo "Updating system packages..."
+case "$(uname -s)" in
+    Linux*)
+        if command -v apt-get >/dev/null 2>&1; then
+            sudo apt update && sudo apt upgrade -y
+        elif command -v pacman >/dev/null 2>&1; then
+            sudo pacman -Syu --noconfirm
+        elif command -v dnf >/dev/null 2>&1; then
+            sudo dnf upgrade -y
+        fi
+        ;;
+    Darwin*)
+        if command -v brew >/dev/null 2>&1; then
+            brew update && brew upgrade
+        fi
+        ;;
+esac
+
+# Update Rust toolchain
+if command -v rustup >/dev/null 2>&1; then
+    echo "Updating Rust toolchain..."
+    rustup update
+fi
+
+# Update pip packages
+if command -v pip3 >/dev/null 2>&1; then
+    echo "Updating Python packages..."
+    pip3 list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n1 pip3 install -U
+fi
+
+echo "=== BLUX10K Update Completed: $(date) ==="
+echo "Log file: $LOG_FILE"
+EOF
+    
+    chmod +x "$update_script"
+    log_success "Update script created: $update_script"
+}
+
+# Create uninstall script
+create_uninstall_script() {
+    log_info "Creating uninstall script..."
+    
+    local uninstall_script="${B10K_DIR}/uninstall.sh"
+    
+    cat > "$uninstall_script" << 'EOF'
+#!/usr/bin/env bash
+# BLUX10K Uninstall Script
+
+set -euo pipefail
+
+echo "=== BLUX10K Uninstaller ==="
+echo "This will remove BLUX10K configuration and restore original shell settings."
+echo ""
+read -rp "Are you sure you want to uninstall BLUX10K? (y/N): " confirm
+
+if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+    echo "Uninstallation cancelled."
+    exit 0
+fi
+
+BLUX10K_ROOT="${XDG_CONFIG_HOME:-$HOME/.config}/blux10k"
+BLUX10K_DATA="${XDG_DATA_HOME:-$HOME/.local/share}/blux10k"
+BLUX10K_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/blux10k"
+
+# Restore original .zshrc if backup exists
+ZSH_BACKUP_FILES=("$HOME/.zshrc.backup."*)
+if [[ ${#ZSH_BACKUP_FILES[@]} -gt 0 ]] && [[ -e "${ZSH_BACKUP_FILES[-1]}" ]]; then
+    echo "Restoring original .zshrc..."
+    cp "${ZSH_BACKUP_FILES[-1]}" "$HOME/.zshrc"
+fi
+
+# Remove BLUX10K directories
+echo "Removing BLUX10K directories..."
+rm -rf "$BLUX10K_ROOT"
+rm -rf "$BLUX10K_DATA"
+rm -rf "$BLUX10K_CACHE"
+
+# Remove from .bashrc if added
+if [[ -f "$HOME/.bashrc" ]] && grep -q "blux10k" "$HOME/.bashrc"; then
+    echo "Removing BLUX10K from .bashrc..."
+    sed -i '/blux10k/d' "$HOME/.bashrc"
+fi
+
+echo ""
+echo "BLUX10K has been uninstalled."
+echo "You may want to manually:"
+echo "1. Remove any BLUX10K-related lines from your shell configuration files"
+echo "2. Remove installed fonts if desired"
+echo "3. Remove any additional tools installed by BLUX10K"
+echo ""
+echo "Thank you for using BLUX10K!"
+EOF
+    
+    chmod +x "$uninstall_script"
+    log_success "Uninstall script created: $uninstall_script"
+}
+
+# Set correct permissions
+set_permissions() {
+    log_info "Setting permissions..."
+    
+    # Set directory permissions
+    chmod 755 "$B10K_DIR"
+    chmod 755 "$BLUX10K_CACHE_DIR"
+    chmod 755 "$B10K_DATA_DIR"
+    
+    # Set script permissions
+    find "$B10K_DIR" -name "*.sh" -type f -exec chmod +x {} \;
+    find "$B10K_DIR" -name "*.zsh" -type f -exec chmod +x {} \;
+    
+    # Set cache directory permissions
+    chmod 700 "$BLUX10K_LOG_DIR"
+    
+    log_success "Permissions set"
+}
+
+# Generate installation report
+generate_installation_report() {
+    log_info "Generating installation report..."
+    
+    local report_file="${BLUX10K_LOG_DIR}/installation-report-$(date +%Y%m%d-%H%M%S).txt"
+    
+    cat > "$report_file" << EOF
+BLUX10K Installation Report
+===========================
+Timestamp: $(date)
+Version: ${BLUX10K_VERSION}
+
+System Information:
+------------------
+Platform: ${OS_TYPE}
+OS: ${OS_NAME} ${OS_VERSION:-}
+Architecture: ${ARCH}
+CPU Cores: ${CPU_CORES}
+RAM: ${RAM_GB}GB
+Package Manager: ${PACKAGE_MANAGER}
+Environment: ${ENVIRONMENT}
+${IS_WSL:+WSL Version: ${WSL_VERSION}}
+${IS_CONTAINER:+Container: ${IS_CONTAINER}}
+${IS_CLOUD:+Cloud Environment: ${IS_CLOUD}}
+
+Installation Summary:
+--------------------
+Prompt System: ${SELECTED_PROMPT}
+Plugin Mode: ${PLUGIN_MODE}
+Update Mode: ${UPDATE_MODE}
+Installation Directory: ${B10K_DIR}
+Data Directory: ${B10K_DATA_DIR}
+Cache Directory: ${BLUX10K_CACHE_DIR}
+
+Installed Components:
+--------------------
+1. Package Manager: ${PACKAGE_MANAGER}
+2. Core Dependencies: $(command -v git && command -v curl && command -v zsh | wc -l)/3
+3. Zinit: $(command -v zinit >/dev/null 2>&1 && echo "Installed" || echo "Not installed")
+4. Prompt System: ${SELECTED_PROMPT}
+5. Fonts: $(ls ~/.local/share/fonts/*.ttf 2>/dev/null | wc -l) installed
+6. Modern Tools: $(command -v bat exa fd rg fzf | wc -l)/5 installed
+
+Configuration Files:
+-------------------
+- Main Config: ${B10K_DIR}/blux10k.zsh
+- Shell Config: $HOME/.zshrc
+- Plugin Config: ${B10K_DIR}/modules/zsh/plugins.zsh
+- Tool Configs: ${B10K_DIR}/modules/tools/
+
+Utilities:
+----------
+- Update Script: ${B10K_DIR}/update.sh
+- Uninstall Script: ${B10K_DIR}/uninstall.sh
+
+Next Steps:
+-----------
+1. Restart your terminal or run: exec zsh
+2. Configure your prompt: p10k configure (for Powerlevel10k)
+3. Customize settings in: ${B10K_DIR}/
+4. Update regularly: ${B10K_DIR}/update.sh
+
+Troubleshooting:
+---------------
+- Check logs: ${BLUX10K_LOG_DIR}
+- Report issues: ${BLUX10K_REPO}/issues
+- Documentation: ${BLUX10K_DOCS}
+
+Thank you for installing BLUX10K! 🚀
+EOF
+    
+    log_success "Installation report generated: $report_file"
+}
+
+# Finalize installation
+finalize_installation() {
+    log_section "Finalizing Installation"
+    
+    local end_time
+    end_time=$(date +%s)
+    local duration=$((end_time - START_TIME))
+    
+    # Print summary
+    log_header "Installation Complete"
+    
+    echo -e "${GREEN}${EMOJI_SUCCESS} BLUX10K v${BLUX10K_VERSION} has been successfully installed!${NC}"
+    echo ""
+    echo -e "${CYAN}Installation Summary:${NC}"
+    echo -e "  Duration: ${WHITE}${duration} seconds${NC}"
+    echo -e "  Platform: ${WHITE}${OS_NAME} ${OS_VERSION:-} (${OS_TYPE})${NC}"
+    echo -e "  Prompt: ${WHITE}${SELECTED_PROMPT}${NC}"
+    echo -e "  Plugins: ${WHITE}${PLUGIN_MODE}${NC}"
+    echo ""
+    
+    echo -e "${CYAN}Next Steps:${NC}"
+    echo "  1. ${GREEN}Restart your terminal${NC} or run: ${WHITE}exec zsh${NC}"
+    
+    if [[ "$SELECTED_PROMPT" == "powerlevel10k" ]]; then
+        echo "  2. ${GREEN}Configure Powerlevel10k${NC}: ${WHITE}p10k configure${NC}"
+    elif [[ "$SELECTED_PROMPT" == "starship" ]]; then
+        echo "  2. ${GREEN}Edit Starship config${NC}: ${WHITE}${XDG_CONFIG_HOME:-$HOME/.config}/starship.toml${NC}"
+    fi
+    
+    echo "  3. ${GREEN}Customize your setup${NC}: ${WHITE}${B10K_DIR}/${NC}"
+    echo "  4. ${GREEN}Update regularly${NC}: ${WHITE}${B10K_DIR}/update.sh${NC}"
+    echo ""
+    
+    echo -e "${CYAN}Useful Commands:${NC}"
+    echo "  • Update BLUX10K: ${WHITE}${B10K_DIR}/update.sh${NC}"
+    echo "  • Uninstall: ${WHITE}${B10K_DIR}/uninstall.sh${NC}"
+    echo "  • View logs: ${WHITE}${BLUX10K_LOG_DIR}/${NC}"
+    echo ""
+    
+    echo -e "${CYAN}Documentation:${NC}"
+    echo "  • Repository: ${BLUE}${BLUX10K_REPO}${NC}"
+    echo "  • Docs: ${BLUE}${BLUX10K_DOCS}${NC}"
+    echo "  • Issues: ${BLUE}${BLUX10K_REPO}/issues${NC}"
+    echo ""
+    
+    echo -e "${GREEN}${EMOJI_ROCKET} Welcome to BLUX10K! Enjoy your enhanced terminal experience!${NC}"
+    echo ""
+    
+    # Write completion marker
+    echo "COMPLETED:$(date -Iseconds)" >> "${BLUX10K_INSTALL_LOG}"
+    
+    return 0
+}
+
+# Function to parse command line arguments
+parse_arguments() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -h|--help)
+                show_help
+                safe_exit 0
+                ;;
+            -v|--verbose)
+                BLUX10K_VERBOSE=1
+                shift
+                ;;
+            -s|--silent)
+                BLUX10K_SILENT_INSTALL=1
+                shift
+                ;;
+            --force-platform=*)
+                BLUX10K_FORCE_PLATFORM="${1#*=}"
+                shift
+                ;;
+            --prompt=*)
+                BLUX10K_PROMPT="${1#*=}"
+                shift
+                ;;
+            --plugin-mode=*)
+                BLUX10K_PLUGIN_MODE="${1#*=}"
+                shift
+                ;;
+            --update-mode=*)
+                BLUX10K_UPDATE_MODE="${1#*=}"
+                shift
+                ;;
+            --debug)
+                BLUX10K_DEBUG=1
+                shift
+                ;;
+            --version)
+                echo "BLUX10K Installer v${BLUX10K_VERSION}"
+                safe_exit 0
+                ;;
+            *)
+                log_warn "Unknown argument: $1"
+                shift
+                ;;
+        esac
+    done
+}
+
+# Function to show help message
+show_help() {
+    cat << EOF
+BLUX10K Enhanced Installer v${BLUX10K_VERSION}
+
+Usage: $(basename "$0") [OPTIONS]
+
+Options:
+  -h, --help                Show this help message
+  -v, --verbose             Enable verbose output
+  -s, --silent              Silent installation (non-interactive)
+      --force-platform=PLATFORM Force specific platform (termux, debian, etc.)
+      --prompt=PROMPT       Set prompt system (powerlevel10k, starship, none)
+      --plugin-mode=MODE    Set plugin mode (complete, essential, minimal, custom)
+      --update-mode=MODE    Set update mode (full, plugins, none)
+      --debug               Enable debug mode
+      --version             Show version information
+
+Examples:
+  $(basename "$0")                    # Interactive installation
+  $(basename "$0") --silent          # Non-interactive with defaults
+  $(basename "$0") --prompt=starship --plugin-mode=essential
+
+Platforms Supported:
+  • Linux (Debian/Ubuntu, Arch, Fedora, etc.)
+  • macOS
+  • Windows (WSL, Git Bash, etc.)
+  • Termux (Android)
+  • Container environments
+
+Documentation: ${BLUX10K_DOCS}
+Repository: ${BLUX10K_REPO}
+EOF
+}
+
+# ===========================================================================
+# ERROR HANDLING AND EXIT
+# ===========================================================================
+
+# Global error handler
+handle_error() {
+    local exit_status=$?
+    local line_number=$1
+    local command_name=$2
+    
+    log_error "Installation failed at line ${line_number}: ${command_name}"
+    log_error "Exit status: ${exit_status}"
+    
+    # Try to provide helpful error messages
+    case $exit_status in
+        1)
+            log_error "General error occurred"
+            ;;
+        2)
+            log_error "Missing or invalid arguments"
+            ;;
+        126)
+            log_error "Permission denied"
+            ;;
+        127)
+            log_error "Command not found"
+            ;;
+        130)
+            log_error "Script terminated by user (Ctrl+C)"
+            ;;
+        *)
+            log_error "Unknown error occurred"
+            ;;
+    esac
+    
+    # Try to clean up if possible
+    cleanup_on_error
+    
+    # Show troubleshooting tips
+    show_troubleshooting_tips
+    
+    safe_exit $exit_status
+}
+
+# Cleanup on error
+cleanup_on_error() {
+    log_info "Attempting cleanup..."
+    
+    # Remove partially installed files if they exist
+    local temp_files=(
+        "/tmp/blux10k-*"
+        "${BLUX10K_CACHE_DIR}/temp-*"
+    )
+    
+    for pattern in "${temp_files[@]}"; do
+        rm -rf $pattern 2>/dev/null || true
+    done
+    
+    log_info "Cleanup completed"
+}
+
+# Show troubleshooting tips
+show_troubleshooting_tips() {
+    echo ""
+    echo -e "${YELLOW}Troubleshooting Tips:${NC}"
+    echo "1. Check the installation log: ${BLUX10K_INSTALL_LOG}"
+    echo "2. Verify your internet connection"
+    echo "3. Ensure you have required permissions"
+    echo "4. Check if dependencies are installed: git, curl, zsh"
+    echo "5. Try running with --verbose flag for more details"
+    echo "6. Report issues at: ${BLUX10K_REPO}/issues"
+    echo ""
+}
+
+# Set up error trap
+trap 'handle_error ${LINENO} "$BASH_COMMAND"' ERR
+
+# Interrupt handler
+trap 'log_warn "Installation interrupted by user"; safe_exit 130' INT TERM
+
+# ===========================================================================
+# MAIN EXECUTION
+# ===========================================================================
+
+# Run main if script is executed directly
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
 
 # Error handling
 trap 'log_error "Installation failed at line $LINENO"; safe_exit 1' ERR
