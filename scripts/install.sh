@@ -158,9 +158,9 @@ detect_platform() {
     log_header "Platform Detection"
     
     # Reset environment variables
-    unset OS_TYPE OS_NAME OS_VERSION PACKAGE_MANAGER \
+    unset OS_TYPE OS_NAME OS_VERSION PACKAGE_MANAGER PLATFORM ENVIRONMENT \
           IS_CONTAINER IS_CLOUD IS_WSL WSL_VERSION \
-          IS_TERMUX ARCH CPU_CORES RAM_GB
+          IS_TERMUX IS_PROOT ARCH CPU_CORES RAM_GB
     
     # Basic system info
     ARCH=$(uname -m)
@@ -281,7 +281,10 @@ detect_platform() {
     fi
 
     # Detect proot environments
-    if [[ -n "${PROOT_VERSION:-}" ]] || grep -aq "proot" /proc/1/cmdline 2>/dev/null; then
+    if grep -qi "proot" /proc/self/status 2>/dev/null \
+        || [[ -n "${PROOT_VERSION:-}" ]] \
+        || grep -aq "proot" /proc/1/cmdline 2>/dev/null \
+        || { command -v proot >/dev/null 2>&1 && [[ -n "${PROOT_TMP_DIR:-}" || -n "${PROOT_ROOTFS:-}" ]]; }; then
         IS_PROOT="true"
         log_info "Detected proot environment"
     fi
@@ -351,6 +354,15 @@ detect_platform() {
     local duration=$(( (end_time - start_time) / 1000000 ))
     
     log_perf "Platform detection completed" "${duration}"
+    PLATFORM="${OS_TYPE}"
+    if [[ -n "${IS_PROOT:-}" ]]; then
+        ENVIRONMENT="proot"
+    elif [[ -n "${IS_TERMUX:-}" ]]; then
+        ENVIRONMENT="termux"
+    else
+        ENVIRONMENT="native"
+    fi
+
     log_success "Platform: ${OS_NAME} ${OS_VERSION:-} (${OS_TYPE})"
     log_success "Package Manager: ${PACKAGE_MANAGER}"
     
@@ -359,9 +371,9 @@ detect_platform() {
     [[ -n "${IS_CLOUD:-}" ]] && log_info "Cloud: ${IS_CLOUD}"
     [[ -n "${IS_TERMUX:-}" ]] && log_info "Environment: Termux"
     
-    export OS_TYPE OS_NAME OS_VERSION PACKAGE_MANAGER \
+    export OS_TYPE OS_NAME OS_VERSION PACKAGE_MANAGER PLATFORM ENVIRONMENT \
            IS_CONTAINER IS_CLOUD IS_WSL WSL_VERSION \
-           IS_TERMUX ARCH CPU_CORES RAM_GB
+           IS_TERMUX IS_PROOT ARCH CPU_CORES RAM_GB
 }
 
 # ===========================================================================
@@ -416,12 +428,44 @@ install_packages() {
     
     case $PACKAGE_MANAGER in
         apt)
+            local apt_update_args=()
+            local apt_install_args=()
             if [[ "$silent" -eq 1 ]]; then
-                sudo DEBIAN_FRONTEND=noninteractive apt update -qq
-                sudo DEBIAN_FRONTEND=noninteractive apt install -yq "${packages[@]}"
+                apt_update_args=(-qq)
+                apt_install_args=(-yq)
             else
-                sudo apt update
-                sudo apt install -y "${packages[@]}"
+                apt_update_args=()
+                apt_install_args=(-y)
+            fi
+
+            sudo DEBIAN_FRONTEND=noninteractive apt-get update "${apt_update_args[@]}"
+
+            local install_list=()
+            for pkg in "${packages[@]}"; do
+                local candidate
+                candidate=$(apt-cache policy "$pkg" 2>/dev/null | awk -F': ' '/Candidate:/{print $2; exit}')
+                if ! apt-cache show "$pkg" >/dev/null 2>&1 || [[ -z "$candidate" || "$candidate" == "(none)" ]]; then
+                    if [[ "$pkg" == "unrar" ]]; then
+                        local fallback_candidate
+                        fallback_candidate=$(apt-cache policy "unrar-free" 2>/dev/null | awk -F': ' '/Candidate:/{print $2; exit}')
+                        if apt-cache show "unrar-free" >/dev/null 2>&1 && [[ -n "$fallback_candidate" && "$fallback_candidate" != "(none)" ]]; then
+                            log_warn "Package unrar unavailable, using unrar-free instead"
+                            install_list+=("unrar-free")
+                        else
+                            log_warn "Package unrar unavailable and unrar-free not found, skipping"
+                        fi
+                        continue
+                    fi
+                    log_error "Package ${pkg} has no installation candidate"
+                    return 1
+                fi
+                install_list+=("$pkg")
+            done
+
+            if [[ ${#install_list[@]} -gt 0 ]]; then
+                sudo DEBIAN_FRONTEND=noninteractive apt-get install "${apt_install_args[@]}" "${install_list[@]}"
+            else
+                log_warn "No packages available to install via apt-get"
             fi
             ;;
         brew)
