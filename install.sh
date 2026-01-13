@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# BLUX10K Enhanced Installer v4.1.0
+# BLUX10K Enhanced Installer v4.0.0
 # Universal Cross-Platform Professional Terminal Setup
 # Enterprise-Grade | Performance Optimized | Security Hardened
 
@@ -11,7 +11,7 @@ IFS=$'\n\t'
 # ===========================================================================
 
 # Version and metadata
-readonly BLUX10K_VERSION="4.1.0"
+readonly BLUX10K_VERSION="4.0.0"
 readonly BLUX10K_REPO="https://github.com/Justadudeinspace/blux10k"
 readonly BLUX10K_DOCS="https://blux10k.github.io/docs"
 readonly B10K_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/blux10k"
@@ -56,7 +56,7 @@ readonly EMOJI_CHOICE="🔘"
 show_interactive_menu() {
     clear
     echo -e "${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║              BLUX10K Interactive Setup Menu v4.1.0            ║${NC}"
+    echo -e "${BLUE}║              BLUX10K Interactive Setup Menu v4.0.0            ║${NC}"
     echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     
