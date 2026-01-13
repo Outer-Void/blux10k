@@ -1,83 +1,90 @@
 #!/usr/bin/env zsh
 ############################################################################
-# ~/.zshrc – Consolidated but Complete Configuration
+# ~/.zshrc – BLUX10K v3.0 - Complete, Debugged & Hardened Configuration
 # BLUX10K.zsh Distributed System - Terminal Interface
 ############################################################################
 
 ############################################################################
-# BLUX10K.zsh HEADER
+# 0) INSTANT PROMPT - MUST BE FIRST
 ############################################################################
-echo "                                                                                "
-echo "            ░█▀▄░█░░░█░█░█░█ ░█▀▀░█▀▀░█▀█░█▀▀░█░█░█▀▀░▀█▀░█▀▀░█▄█            "
-echo "            ░█▀▄░█░░░█░█░▄▀▄ ░█▀▀░█░░░█░█░▀▀█░░█░░▀▀█░░█░░█▀▀░█░█            "
-echo "            ░▀▀░░▀▀▀░▀▀▀░▀░▀░ ▀▀▀░▀▀▀░▀▀▀░▀▀▀░░▀░░▀▀▀░░▀░░▀▀▀░▀░▀            "
-echo "                                                                                "
-echo "  █▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█"
-echo "  █                                                                          █"
-echo "  █  >> BLUX ARTIFICIAL INTELLIGENCE DISTRIBUTED SYSTEM ONLINE              █"
-echo "  █  >> TERMINAL INTERFACE ACTIVE [$(date +"%H:%M:%S UTC")]                         █"
-echo "  █  >> READY FOR USER COMMANDS                                            █"
-echo "  █                                                                          █"
-echo "  █▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄█"
-echo "                BLUX Ecosystem: https://github.com/Outer-Void                "
-echo "                Developer: https://github.com/Justadudeinspace               "
-echo "                                                                                "
-
-############################################################################
-# 1) PERFORMANCE & COMPATIBILITY
-############################################################################
-typeset -g ZSH_DISABLE_COMPFIX=true
-
-# Enable Powerlevel10k instant prompt - MUST BE AT THE VERY TOP
+# Enable Powerlevel10k instant prompt before any output
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
 ############################################################################
-# 2) PLUGIN MANAGERS SETUP - SIMPLIFIED TO AVOID CONFLICTS
+# 1) BLUX10K HEADER (After instant prompt to avoid conflicts)
 ############################################################################
-
-# A) Zplug - Primary plugin manager (RECOMMENDED - use only one)
-if [[ ! -d ~/.zplug ]]; then
-    git clone https://github.com/zplug/zplug ~/.zplug
+# Only show header in interactive shells and if not already shown
+if [[ -o interactive ]] && [[ -z "$BLUX10K_HEADER_SHOWN" ]]; then
+    echo ""
+    echo "            ░█▀▄░█░░░█░█░█░█ ░█▀▀░█▀▀░█▀█░█▀▀░█░█░█▀▀░▀█▀░█▀▀░█▄█            "
+    echo "            ░█▀▄░█░░░█░█░▄▀▄ ░█▀▀░█░░░█░█░▀▀█░░█░░▀▀█░░█░░█▀▀░█░█            "
+    echo "            ░▀▀░░▀▀▀░▀▀▀░▀░▀░ ▀▀▀░▀▀▀░▀▀▀░▀▀▀░░▀░░▀▀▀░░▀░░▀▀▀░▀░▀            "
+    echo ""
+    echo "  ╔════════════════════════════════════════════════════════════════════════╗"
+    echo "  ║  >> BLUX ARTIFICIAL INTELLIGENCE DISTRIBUTED SYSTEM ONLINE            ║"
+    echo "  ║  >> TERMINAL INTERFACE ACTIVE [$(date +"%H:%M:%S %Z")]                        ║"
+    echo "  ║  >> READY FOR USER COMMANDS                                           ║"
+    echo "  ╚════════════════════════════════════════════════════════════════════════╝"
+    echo "                BLUX: https://github.com/Outer-Void                         "
+    echo "                Dev: https://github.com/Justadudeinspace                    "
+    echo ""
+    export BLUX10K_HEADER_SHOWN=1
 fi
-source ~/.zplug/init.zsh
-
-# B) Zinit - Optional secondary (COMMENT OUT IF USING ZPLUG)
-# source ~/.zinit/bin/zinit.zsh 2>/dev/null || {
-#   git clone https://github.com/zdharma-continuum/zinit.git ~/.zinit/bin
-#   source ~/.zinit/bin/zinit.zsh
-# }
-
-# C) Zgenom - Comment out to avoid conflicts
-# source "${HOME}/.zgenom/zgenom.zsh" 2>/dev/null || {
-#   git clone https://github.com/jandamm/zgenom.git "${HOME}/.zgenom"
-#   source "${HOME}/.zgenom/zgenom.zsh"
-# }
-
-# D) Znap - For prompt and async loading
-[[ -r ~/Repos/znap/znap.zsh ]] || 
-    git clone --depth 1 -- https://github.com/marlonrichert/zsh-snap.git ~/Repos/znap
-source ~/Repos/znap/znap.zsh
 
 ############################################################################
-# 3) ZPLUG PLUGINS - STREAMLINED
+# 2) PERFORMANCE & COMPATIBILITY
+############################################################################
+typeset -g ZSH_DISABLE_COMPFIX=true
+
+# XDG base directories - set early
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+
+# Create directories
+mkdir -p "$XDG_CACHE_HOME/zsh" "$XDG_STATE_HOME/zsh" "$XDG_CONFIG_HOME" 2>/dev/null
+
+############################################################################
+# 3) PLUGIN MANAGER SETUP - ZPLUG ONLY (Simplified)
 ############################################################################
 
-# Core essential plugins only
+# Zplug - Primary and ONLY plugin manager
+export ZPLUG_HOME="${ZPLUG_HOME:-$HOME/.zplug}"
+
+if [[ ! -d "$ZPLUG_HOME" ]]; then
+    echo "Installing zplug..."
+    git clone https://github.com/zplug/zplug "$ZPLUG_HOME"
+fi
+
+if [[ -f "$ZPLUG_HOME/init.zsh" ]]; then
+    source "$ZPLUG_HOME/init.zsh"
+else
+    echo "Warning: zplug not found at $ZPLUG_HOME"
+fi
+
+############################################################################
+# 4) ZPLUG PLUGINS - OPTIMIZED & STREAMLINED
+############################################################################
+
+# Core ZSH enhancements
 zplug "zsh-users/zsh-syntax-highlighting", defer:2
-zplug "zsh-users/zsh-autosuggestions"
-zplug "zsh-users/zsh-history-substring-search"
+zplug "zsh-users/zsh-autosuggestions", defer:2
+zplug "zsh-users/zsh-history-substring-search", defer:2
 zplug "zsh-users/zsh-completions"
+
+# Directory jumping
 zplug "agkozak/zsh-z"
 
-# Oh My Zsh plugins
+# Oh My Zsh plugins (lightweight ones only)
 zplug "plugins/git", from:oh-my-zsh
 zplug "plugins/command-not-found", from:oh-my-zsh
 zplug "plugins/colored-man-pages", from:oh-my-zsh
 zplug "plugins/sudo", from:oh-my-zsh
 
-# Theme - Powerlevel10k (recommended)
+# Theme - Powerlevel10k
 zplug "romkatv/powerlevel10k", as:theme, depth:1
 
 # Utility plugins
@@ -87,118 +94,98 @@ zplug "Aloxaf/fzf-tab"
 
 # Install plugins if needed
 if ! zplug check --verbose; then
-    printf "Install missing plugins? [y/N]: "
+    printf "Install missing zplug plugins? [y/N]: "
     if read -q; then
         echo; zplug install
     fi
 fi
 
-# Then load them
+# Load all plugins
 zplug load
 
 ############################################################################
-# 4) MANUALLY SOURCED PLUGINS - FIXED PATHS
+# 5) ADDITIONAL PLUGINS - MANUAL LOADING
 ############################################################################
 
-# Load autosuggestions if not loaded by zplug
-if ! typeset -f _zsh_autosuggest_start >/dev/null; then
-    [[ -f ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh ]] && \
-        source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
+# zsh-safe-rm for safer file deletion
+if [[ ! -d "${ZDOTDIR:-~}/.zplugins/zsh-safe-rm" ]]; then
+    git clone --recursive --depth 1 \
+        https://github.com/mattmc3/zsh-safe-rm \
+        "${ZDOTDIR:-~}/.zplugins/zsh-safe-rm" 2>/dev/null
 fi
 
-# Safe RM plugin with better error handling
-[[ -d ${ZDOTDIR:-~}/.zplugins/zsh-safe-rm ]] || \
-  git clone --recursive --depth 1 https://github.com/mattmc3/zsh-safe-rm ${ZDOTDIR:-~}/.zplugins/zsh-safe-rm
-[[ -f ${ZDOTDIR:-~}/.zplugins/zsh-safe-rm/zsh-safe-rm.plugin.zsh ]] && \
-    source ${ZDOTDIR:-~}/.zplugins/zsh-safe-rm/zsh-safe-rm.plugin.zsh
+[[ -f "${ZDOTDIR:-~}/.zplugins/zsh-safe-rm/zsh-safe-rm.plugin.zsh" ]] && \
+    source "${ZDOTDIR:-~}/.zplugins/zsh-safe-rm/zsh-safe-rm.plugin.zsh"
 
 ############################################################################
-# 5) ZINIT PLUGINS - OPTIONAL (COMMENT OUT IF USING ZPLUG)
+# 6) ENVIRONMENT VARIABLES
 ############################################################################
-# Note: Using multiple plugin managers can cause conflicts
-# Uncomment below only if you want to use zinit instead of zplug
-
-# # Fast syntax highlighting
-# zinit light zdharma-continuum/fast-syntax-highlighting
-# 
-# # Pure theme
-# zinit ice compile'(pure|async).zsh' pick'async.zsh' src'pure.zsh'
-# zinit light sindresorhus/pure
-# 
-# # Autosuggestions
-# zinit light zsh-users/zsh-autosuggestions
-# 
-# # History search
-# zinit light zdharma-continuum/history-search-multi-word
-
-############################################################################
-# 6) ZGENOM SETUP - COMMENTED OUT TO AVOID CONFLICTS
-############################################################################
-# Using multiple plugin managers causes conflicts. Stick with zplug.
-
-############################################################################
-# 7) ZNAP SETUP - FOR ASYNC LOADING
-############################################################################
-
-# Use znap for specific async functionality
-znap source marlonrichert/zsh-autocomplete
-znap function _pyenv pyenv "znap eval pyenv 'pyenv init - --no-rehash'"
-compctl -K _pyenv pyenv
-
-############################################################################
-# 8) ENVIRONMENT & PATH SETUP
-############################################################################
-
-# XDG base dirs
-: ${XDG_CONFIG_HOME:=$HOME/.config}
-: ${XDG_CACHE_HOME:=$HOME/.cache}
-: ${XDG_STATE_HOME:=$HOME/.local/state}
-mkdir -p "$XDG_CACHE_HOME/zsh" "$XDG_STATE_HOME/zsh" 2>/dev/null
 
 # Ruby gems config
 [[ ! -f ~/.gemrc ]] && echo "gem: --no-document" > ~/.gemrc
 
 # History configuration
-export HISTFILE="${XDG_STATE_HOME}/zsh/history-$(date +%Y-%m)"
+export HISTFILE="${XDG_STATE_HOME}/zsh/history"
 export HISTSIZE=100000
 export SAVEHIST=100000
-setopt INC_APPEND_HISTORY_TIME
-setopt SHARE_HISTORY
+
+# Shell options for history
 setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_FIND_NO_DUPS
 setopt HIST_REDUCE_BLANKS
 setopt HIST_IGNORE_SPACE
+setopt HIST_VERIFY
+setopt SHARE_HISTORY
+setopt INC_APPEND_HISTORY_TIME
 setopt EXTENDED_HISTORY
 
-# Shell behaviour
+# General shell behavior
 setopt PROMPT_SUBST
 setopt INTERACTIVE_COMMENTS
 setopt AUTO_CD
+setopt AUTO_PUSHD
+setopt PUSHD_IGNORE_DUPS
+setopt PUSHD_SILENT
 setopt EXTENDED_GLOB
 setopt NO_BEEP
+setopt NO_LIST_BEEP
 setopt NOTIFY
+setopt COMPLETE_IN_WORD
+setopt ALWAYS_TO_END
 
 # TTY-only options
 if [[ -t 0 ]]; then
-  setopt CORRECT
-  setopt CORRECT_ALL
-  bindkey -e  # Emacs keybindings
+    setopt CORRECT
+    setopt CORRECT_ALL
+    bindkey -e  # Emacs keybindings
 fi
 
 SPROMPT='zsh: correct '\''%R'\'' to '\''%r'\''? [Yes, No, Abort, Edit] '
 
-# PATH dedup + Windows extras
-typeset -U path
+############################################################################
+# 7) PATH CONFIGURATION
+############################################################################
+
+# Ensure unique paths
+typeset -U path fpath
+
+# Package manager homes
 export PNPM_HOME="$HOME/.local/share/pnpm"
 export VOLTA_HOME="$HOME/.volta"
+export NVM_DIR="$HOME/.nvm"
+export CARGO_HOME="$HOME/.cargo"
+export GOPATH="$HOME/go"
 
+# Build PATH array
 path=(
     "$HOME/.local/bin"
     "$HOME/bin"
-    "$HOME/.cargo/bin"
+    "$CARGO_HOME/bin"
     "$HOME/.npm-global/bin"
     "$PNPM_HOME"
     "$VOLTA_HOME/bin"
-    "$HOME/.local/share/gem/ruby/3.0.0/bin"  # Fixed version number
+    "$GOPATH/bin"
+    "$HOME/.local/share/gem/ruby/3.0.0/bin"
     "$HOME/Scripts"
     "$HOME/dev/tools/flutter/bin"
     "$HOME/.turso"
@@ -208,32 +195,37 @@ path=(
     "/usr/bin"
     "/sbin"
     "/bin"
-    $path
+    "$path[@]"
 )
 
-# Windows additions
-[[ -d /mingw64/bin ]] && path+=( /mingw64/bin )
-[[ -d "/c/Program Files/Docker/Docker/resources/bin" ]] && path+=( "/c/Program Files/Docker/Docker/resources/bin" )
+# Platform-specific additions
+[[ -d /mingw64/bin ]] && path+=(/mingw64/bin)
+[[ -d "/c/Program Files/Docker/Docker/resources/bin" ]] && \
+    path+=("/c/Program Files/Docker/Docker/resources/bin")
 
+# Export PATH
 export PATH
 
-# Platform detection
-WSL=0
-[[ -f /proc/version ]] && grep -qi microsoft /proc/version && WSL=1
-export WSL
+############################################################################
+# 8) PLATFORM DETECTION
+############################################################################
+
+# WSL detection
+export WSL=0
+if [[ -f /proc/version ]] && grep -qi microsoft /proc/version; then
+    export WSL=1
+fi
 
 # Termux detection
-TERMUX=0
-[[ -d "/data/data/com.termux" ]] && TERMUX=1
-export TERMUX
+export TERMUX=0
+[[ -d "/data/data/com.termux" ]] && export TERMUX=1
 
 # macOS detection
-MACOS=0
-[[ "$(uname)" == "Darwin" ]] && MACOS=1
-export MACOS
+export MACOS=0
+[[ "$(uname)" == "Darwin" ]] && export MACOS=1
 
 # True-color auto-detection
-if [[ "$COLORTERM" == "truecolor" || "$TERM" == *256* ]]; then
+if [[ "$COLORTERM" == "truecolor" ]] || [[ "$TERM" == *256* ]]; then
     export TERM=xterm-256color
     export BAT_THEME=TwoDark
 fi
@@ -242,16 +234,17 @@ fi
 # 9) PLUGIN CONFIGURATIONS
 ############################################################################
 
-# Powerlevel10k - must be at the end for prompt systems
+# Powerlevel10k
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 
 # zsh-autosuggestions
-ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=8'
-ZSH_AUTOSUGGEST_STRATEGY=(history completion)
-ZSH_AUTOSUGGEST_USE_ASYNC=1
-ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
+export ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=8'
+export ZSH_AUTOSUGGEST_STRATEGY=(history completion)
+export ZSH_AUTOSUGGEST_USE_ASYNC=1
+export ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
 
 # zsh-syntax-highlighting
+typeset -gA ZSH_HIGHLIGHT_STYLES
 ZSH_HIGHLIGHT_HIGHLIGHTERS=(main brackets pattern)
 ZSH_HIGHLIGHT_STYLES[default]=none
 ZSH_HIGHLIGHT_STYLES[unknown-token]=fg=red
@@ -262,53 +255,81 @@ ZSH_HIGHLIGHT_STYLES[path]=bold
 ZSH_HIGHLIGHT_STYLES[globbing]=fg=blue,bold
 
 # zsh-autoswitch-virtualenv
-AUTOSWITCH_VIRTUAL_ENV_DIR="venv"
-AUTOSWITCH_VIRTUAL_ENV_DIR_EXTRA=".venv"
-AUTOSWITCH_SILENT=1
+export AUTOSWITCH_VIRTUAL_ENV_DIR="venv"
+export AUTOSWITCH_VIRTUAL_ENV_DIR_EXTRA=".venv"
+export AUTOSWITCH_SILENT=1
 
 # zsh-z
-ZSHZ_CMD="z"
-ZSHZ_CASE="smart"
-ZSHZ_UNCOMMON=1
+export ZSHZ_CMD="z"
+export ZSHZ_CASE="smart"
+export ZSHZ_UNCOMMON=1
 
-# nvm setup
-export NVM_DIR="$HOME/.nvm"
-[[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
+# NVM (lazy loading for speed)
+[[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh" --no-use
+[[ -s "$NVM_DIR/bash_completion" ]] && source "$NVM_DIR/bash_completion"
 
-# zoxide
-eval "$(zoxide init zsh)"
+# Lazy load NVM
+nvm() {
+    unset -f nvm
+    [[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
+    nvm "$@"
+}
+
+# zoxide - faster directory jumping
+if command -v zoxide >/dev/null 2>&1; then
+    eval "$(zoxide init zsh)"
+fi
 
 ############################################################################
 # 10) FZF + FD CONFIGURATION
 ############################################################################
-export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
-if [[ "$COLORTERM" == "truecolor" || "$TERM" == *256* ]]; then
+
+export FZF_DEFAULT_OPTS='
+    --height 40%
+    --layout=reverse
+    --border
+    --inline-info
+    --preview-window=:hidden
+    --bind=ctrl-/:toggle-preview
+'
+
+# True color support for FZF
+if [[ "$COLORTERM" == "truecolor" ]] || [[ "$TERM" == *256* ]]; then
     export FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --color=16,bg+:238,preview-bg:235"
 fi
 
+# Use fd if available
 if command -v fd >/dev/null 2>&1; then
     export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
     export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+    export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
 elif command -v fdfind >/dev/null 2>&1; then
     alias fd='fdfind'
     export FZF_DEFAULT_COMMAND='fdfind --type f --hidden --follow --exclude .git'
     export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+    export FZF_ALT_C_COMMAND='fdfind --type d --hidden --follow --exclude .git'
 fi
+
+# Load FZF keybindings if available
+[[ -f ~/.fzf.zsh ]] && source ~/.fzf.zsh
+[[ -f /usr/share/doc/fzf/examples/key-bindings.zsh ]] && \
+    source /usr/share/doc/fzf/examples/key-bindings.zsh
 
 ############################################################################
 # 11) ALIASES
 ############################################################################
 
-# Listing commands
+# Listing commands - use eza if available, fallback to ls
 if command -v eza >/dev/null 2>&1; then
     alias ls='eza --group-directories-first --icons'
     alias ll='eza -lh --group-directories-first --icons'
     alias la='eza -lha --group-directories-first --icons'
-    alias tree='eza --tree'
+    alias lt='eza --tree --level=2 --icons'
+    alias tree='eza --tree --icons'
 else
     alias ls='ls --color=auto -F'
-    alias ll='ls -lh --color=auto'
-    alias la='ls -lha --color=auto'
+    alias ll='ls -lhF --color=auto'
+    alias la='ls -lhaF --color=auto'
 fi
 
 alias l='ls'
@@ -318,489 +339,412 @@ alias ..='cd ..'
 alias ...='cd ../..'
 alias ....='cd ../../..'
 alias .....='cd ../../../..'
+alias -- -='cd -'
 
-# Safety aliases
+# Safety aliases with better flags
 alias cp='cp -iv --reflink=auto'
 alias mv='mv -iv'
-alias rm='rm -Iv'
+alias rm='rm -Iv --preserve-root'
 alias mkdir='mkdir -pv'
+alias chown='chown --preserve-root'
+alias chmod='chmod --preserve-root'
+alias chgrp='chgrp --preserve-root'
 
 # Utility aliases
 alias grep='grep --color=auto'
+alias egrep='grep -E --color=auto'
+alias fgrep='grep -F --color=auto'
+alias diff='diff --color=auto'
 alias df='df -h'
 alias du='du -h'
+alias free='free -h'
 alias wget='wget -c'
+alias curl='curl -L'
+alias ping='ping -c 5'
 alias ports='ss -tulpn 2>/dev/null || netstat -tulpn'
+alias myip='curl -s ifconfig.me'
 
 # Python aliases
+alias py='python3'
+alias python='python3'
+alias pip='pip3'
 alias serve='python3 -m http.server 8080'
 alias json='python3 -m json.tool'
 alias pyhttp='python3 -m http.server'
+alias venv='python3 -m venv'
 
 # Editor aliases
 alias vi='nvim'
 alias vim='nvim'
 alias svi='sudo nvim'
+alias edit='$EDITOR'
 
 # Directory aliases
 alias bd='cd "$OLDPWD"'
 alias home='cd ~'
 alias cd..='cd ..'
+alias ..l='cd .. && ll'
 
-# System aliases (Debian/Ubuntu specific)
+# System aliases
 if command -v apt >/dev/null 2>&1; then
+    alias apt-update='sudo apt update'
+    alias apt-upgrade='sudo apt update && sudo apt full-upgrade -y'
+    alias apt-install='sudo apt install'
+    alias apt-remove='sudo apt remove'
+    alias apt-search='apt search'
+    alias apt-clean='sudo apt autoremove -y && sudo apt autoclean'
     alias fix-install='sudo apt --fix-broken install'
-    alias autoremove='sudo apt autoremove -y'
-    alias system-upgrade="sudo apt update && sudo apt full-upgrade -y"
-    alias dist-upgrade="sudo apt update && sudo apt dist-upgrade -y"
 fi
 
-# Modern tool aliases
+# Modern tool replacements
 if command -v bat >/dev/null 2>&1; then
     alias cat='bat --paging=never'
+    alias less='bat'
 elif command -v batcat >/dev/null 2>&1; then
     alias bat='batcat'
     alias cat='batcat --paging=never'
+    alias less='batcat'
 fi
 
-# Web search aliases (if web-search plugin is loaded)
-alias google='web_search google' 2>/dev/null || true
-alias ddg='web_search duckduckgo' 2>/dev/null || true
-alias github='web_search github' 2>/dev/null || true
-alias stackoverflow='web_search stackoverflow' 2>/dev/null || true
+if command -v rg >/dev/null 2>&1; then
+    alias rgf='rg --files | rg'
+fi
 
-# Git aliases (extended)
-alias gst='git status'
-alias gd='git diff'
-alias gl='git log --oneline --graph --decorate'
+# Git aliases
+alias g='git'
 alias ga='git add'
+alias gaa='git add --all'
 alias gc='git commit'
-alias gp='git push'
+alias gcm='git commit -m'
+alias gca='git commit --amend'
 alias gco='git checkout'
+alias gcb='git checkout -b'
+alias gd='git diff'
+alias gds='git diff --staged'
+alias gf='git fetch'
+alias gl='git log --oneline --graph --decorate'
+alias gll='git log --graph --pretty=format:"%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset"'
+alias gp='git push'
+alias gpl='git pull'
+alias gs='git status'
+alias gst='git status -sb'
+alias gsta='git stash'
+alias gstp='git stash pop'
+
+# Docker aliases
+if command -v docker >/dev/null 2>&1; then
+    alias d='docker'
+    alias dc='docker compose'
+    alias dps='docker ps'
+    alias dpsa='docker ps -a'
+    alias di='docker images'
+    alias dex='docker exec -it'
+    alias dlog='docker logs -f'
+    alias dclean='docker system prune -af'
+fi
 
 ############################################################################
-# 12) USEFUL FUNCTIONS
+# 12) FUNCTIONS
 ############################################################################
 
-mkcd() { mkdir -p "$1" && cd "$1"; }
-bk() { cp -f "$1" "$1.bak"; }
-ff() { find . -type f -iname "*$1*" 2>/dev/null; }
-hist() { (( $# )) && history | grep -- "$*" || history; }
+# Create directory and cd into it
+mkcd() {
+    [[ -z "$1" ]] && { echo "Usage: mkcd <directory>"; return 1; }
+    mkdir -p "$1" && cd "$1" || return 1
+}
 
+# Backup file with timestamp
+bk() {
+    [[ -z "$1" ]] && { echo "Usage: bk <file>"; return 1; }
+    [[ ! -f "$1" ]] && { echo "File not found: $1"; return 1; }
+    cp -f "$1" "${1}.bak.$(date +%Y%m%d_%H%M%S)"
+}
+
+# Find files by name
+ff() {
+    [[ -z "$1" ]] && { echo "Usage: ff <pattern>"; return 1; }
+    find . -type f -iname "*$1*" 2>/dev/null
+}
+
+# Search history
+hist() {
+    if (( $# )); then
+        history | grep -i -- "$*"
+    else
+        history
+    fi
+}
+
+# Extract various archive formats
 extract() {
     if [[ -z "$1" ]]; then
-        echo "Usage: extract <file>"
+        echo "Usage: extract <archive-file>"
         return 1
     fi
     
     if [[ ! -f "$1" ]]; then
-        echo "File not found: $1"
+        echo "Error: File '$1' not found"
         return 1
     fi
     
     case "$1" in
-        *.tar.bz2|*.tbz2) tar xjf "$1" ;;
-        *.tar.gz|*.tgz)   tar xzf "$1" ;;
-        *.tar.xz)         tar xJf "$1" ;;
-        *.bz2)            bunzip2 "$1" ;;
-        *.rar)            unrar x "$1" ;;
-        *.gz)             gunzip "$1" ;;
-        *.tar)            tar xf "$1" ;;
-        *.zip)            unzip "$1" ;;
-        *.Z)              uncompress "$1" ;;
-        *.7z)             7z x "$1" ;;
-        *.xz)             unxz "$1" ;;
-        *.lzma)           unlzma "$1" ;;
-        *)                echo "Cannot extract '$1': unknown format" && return 1 ;;
+        *.tar.bz2|*.tbz|*.tbz2) tar xjf "$1" ;;
+        *.tar.gz|*.tgz) tar xzf "$1" ;;
+        *.tar.xz|*.txz) tar xJf "$1" ;;
+        *.tar.zst) tar -I zstd -xf "$1" ;;
+        *.tar) tar xf "$1" ;;
+        *.bz2) bunzip2 "$1" ;;
+        *.gz) gunzip "$1" ;;
+        *.xz) unxz "$1" ;;
+        *.zip|*.jar|*.war) unzip "$1" ;;
+        *.rar) unrar x "$1" ;;
+        *.7z) 7z x "$1" ;;
+        *.Z) uncompress "$1" ;;
+        *.zst) unzstd "$1" ;;
+        *) echo "Error: Unsupported archive format '$1'"; return 1 ;;
     esac
 }
 
+# Kill process on specific port
 killport() {
     local port="$1"
-    if [[ -z "$port" ]]; then
-        echo "Usage: killport <port>"
-        return 1
-    fi
+    [[ -z "$port" ]] && { echo "Usage: killport <port>"; return 1; }
     
     local pid
     if command -v lsof >/dev/null 2>&1; then
-        pid=$(lsof -ti:"$port")
-    elif command -v netstat >/dev/null 2>&1; then
-        # This might need adjustment for different systems
-        pid=$(netstat -tulpn 2>/dev/null | awk -v port=":$port" '$4 ~ port {split($7, a, "/"); print a[1]}' | head -1)
-    else
-        echo "Neither lsof nor netstat found"
-        return 1
+        pid=$(lsof -ti:"$port" 2>/dev/null)
+    elif command -v ss >/dev/null 2>&1; then
+        pid=$(ss -lptn "sport = :$port" 2>/dev/null | awk 'NR>1 {split($6, a, ","); split(a[2], b, "="); print b[2]}')
     fi
     
     if [[ -n "$pid" ]]; then
-        kill -9 "$pid"
-        echo "Killed process $pid on port $port"
+        echo "Killing process $pid on port $port"
+        kill -9 "$pid" 2>/dev/null && echo "Process killed successfully"
     else
         echo "No process found on port $port"
+        return 1
     fi
 }
 
-# GitHub functions
-gcom() { git add . && git commit -m "$1"; }
-lazyg() { git add . && git commit -m "$1" && git push; }
+# Git convenience functions
+gcom() {
+    [[ -z "$1" ]] && { echo "Usage: gcom <message>"; return 1; }
+    git add . && git commit -m "$1"
+}
+
+lazyg() {
+    [[ -z "$1" ]] && { echo "Usage: lazyg <message>"; return 1; }
+    git add . && git commit -m "$1" && git push
+}
+
+# Quick note taking
+note() {
+    local note_file="${NOTE_FILE:-$HOME/notes.txt}"
+    if [[ $# -eq 0 ]]; then
+        ${EDITOR:-vim} "$note_file"
+    else
+        echo "$(date '+%Y-%m-%d %H:%M:%S') - $*" >> "$note_file"
+    fi
+}
+
+# Weather function
+weather() {
+    local location="${1:-}"
+    curl -s "wttr.in/${location}?format=3"
+}
 
 ############################################################################
 # 13) KEYBINDINGS
 ############################################################################
 
-# History substring search keybindings
+# History substring search
 bindkey '^[[A' history-substring-search-up
 bindkey '^[[B' history-substring-search-down
 bindkey '^P' history-substring-search-up
 bindkey '^N' history-substring-search-down
 
+# Better word navigation
+bindkey '^[[1;5C' forward-word      # Ctrl+Right
+bindkey '^[[1;5D' backward-word     # Ctrl+Left
+
 # Better menuselect
+zmodload zsh/complist
 bindkey -M menuselect '^M' .accept-line
+bindkey -M menuselect '^[[Z' reverse-menu-complete
 
-# Reduce beeping
-setopt NO_LIST_BEEP
+# Edit command line in editor
+autoload -Uz edit-command-line
+zle -N edit-command-line
+bindkey '^X^E' edit-command-line
 
-# zoxide interactive
-zoxide_i() {
-    local result
-    result="$(zoxide query -i)"
-    if [[ -n "$result" ]]; then
-        cd "$result"
-        local precmd
-        for precmd in $precmd_functions; do
-            $precmd
-        done
-        zle reset-prompt
-    fi
-}
-zle -N zoxide_i
-bindkey '^f' zoxide_i
+# zoxide interactive (Ctrl+F)
+if command -v zoxide >/dev/null 2>&1; then
+    zoxide_i() {
+        local result
+        result="$(zoxide query -i 2>/dev/null)"
+        if [[ -n "$result" ]]; then
+            cd "$result" || return 1
+            zle reset-prompt
+        fi
+    }
+    zle -N zoxide_i
+    bindkey '^f' zoxide_i
+fi
 
 ############################################################################
 # 14) SYSTEM CONFIGURATION
 ############################################################################
 
-# SSH-Agent auto-start
-if [[ -z "$SSH_AUTH_SOCK" ]] && command -v ssh-agent >/dev/null; then
-    eval "$(ssh-agent -s)" >/dev/null
-    # Add common SSH keys
-    for key in ~/.ssh/id_ed25519 ~/.ssh/id_rsa ~/.ssh/id_ecdsa; do
+# SSH-Agent auto-start (smart)
+if [[ -z "$SSH_AUTH_SOCK" ]] && command -v ssh-agent >/dev/null 2>&1; then
+    # Check for existing agent
+    if [[ -f ~/.ssh/agent.env ]]; then
+        source ~/.ssh/agent.env >/dev/null
+        if ! kill -0 "$SSH_AGENT_PID" 2>/dev/null; then
+            rm -f ~/.ssh/agent.env
+            eval "$(ssh-agent -s)" >/dev/null
+            echo "export SSH_AUTH_SOCK=$SSH_AUTH_SOCK" > ~/.ssh/agent.env
+            echo "export SSH_AGENT_PID=$SSH_AGENT_PID" >> ~/.ssh/agent.env
+        fi
+    else
+        eval "$(ssh-agent -s)" >/dev/null
+        echo "export SSH_AUTH_SOCK=$SSH_AUTH_SOCK" > ~/.ssh/agent.env
+        echo "export SSH_AGENT_PID=$SSH_AGENT_PID" >> ~/.ssh/agent.env
+    fi
+    
+    # Auto-add SSH keys
+    for key in ~/.ssh/id_{ed25519,rsa,ecdsa}; do
         [[ -f "$key" ]] && ssh-add "$key" 2>/dev/null
     done
 fi
 
 # GPG TTY
-export GPG_TTY=$TTY
+export GPG_TTY=$(tty)
 
-# Docker / Podman env
+# Docker / Podman environment
 export DOCKER_BUILDKIT=1
 export BUILDKIT_PROGRESS=plain
+export COMPOSE_DOCKER_CLI_BUILD=1
 export PODMAN_USERNS=keep-id
 
+# Editor configuration
+export EDITOR="${EDITOR:-nvim}"
+export VISUAL="${VISUAL:-nvim}"
+export PAGER="${PAGER:-less}"
+
+# Less configuration
+export LESS='-R -i -g -s -w -X -F'
+export LESSHISTFILE="$XDG_CACHE_HOME/less/history"
+
 ############################################################################
-# 15) BLUX10K HELP SYSTEM - b10k --help
+# 15) COMPLETION SYSTEM
+############################################################################
+
+# Initialize completion system
+autoload -Uz compinit
+
+# Use cache for faster loading
+if [[ -n "${ZDOTDIR:-~}/.zcompdump"(#qN.mh+24) ]]; then
+    compinit
+else
+    compinit -C
+fi
+
+# Completion styling
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+zstyle ':completion:*' use-cache on
+zstyle ':completion:*' cache-path "$XDG_CACHE_HOME/zsh/zcompcache"
+zstyle ':completion:*:descriptions' format '[%d]'
+zstyle ':completion:*:warnings' format 'No matches for: %d'
+zstyle ':completion:*' group-name ''
+zstyle ':completion:*' verbose yes
+
+# Process completion
+zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
+zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
+
+############################################################################
+# 16) BLUX10K HELP SYSTEM
 ############################################################################
 
 b10k() {
     case "$1" in
         -h|--help|help)
-            echo ""
-            echo "╔════════════════════════════════════════════════════════════════╗"
-            echo "║                   BLUX10K COMMAND REFERENCE                    ║"
-            echo "║                    Terminal Power System                       ║"
-            echo "╚════════════════════════════════════════════════════════════════╝"
-            echo ""
-            
-            # System Commands
-            echo "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬ SYSTEM COMMANDS ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
-            echo "  update, up, update_system  - Universal system update"
-            echo "  rz                         - Reload ZSH configuration"
-            echo "  zsh-health                 - Show ZSH health status"
-            echo ""
-            
-            # Navigation Aliases
-            echo "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬ NAVIGATION ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
-            echo "  .., ..., ...., .....       - Quick directory navigation"
-            echo "  home                       - Go to home directory"
-            echo "  bd                         - Go back to previous directory"
-            echo "  cd..                       - Fix common cd typo"
-            echo ""
-            
-            # File Operations
-            echo "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬ FILE OPERATIONS ▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
-            echo "  ls, ll, la, l, tree        - Enhanced listing (eza)"
-            echo "  cp, mv, rm                 - Safe file operations"
-            echo "  mkdir                      - Create directories with parents"
-            echo "  grep                       - Colored grep"
-            echo "  df, du                     - Human-readable disk usage"
-            echo ""
-            
-            # Custom Functions
-            echo "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬ CUSTOM FUNCTIONS ▬▬▬▬▬▬▬▬▬▬▬▬▬"
-            echo "  mkcd <dir>                 - Create and enter directory"
-            echo "  bk <file>                  - Backup file with .bak extension"
-            echo "  ff <pattern>               - Find files by name pattern"
-            echo "  hist <pattern>             - Search command history"
-            echo "  extract <archive>          - Extract various archive formats"
-            echo "  killport <port>            - Kill process using specified port"
-            echo ""
-            
-            # Development Tools
-            echo "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬ DEVELOPMENT ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
-            echo "  serve                      - Start Python HTTP server on 8080"
-            echo "  json                       - Pretty-print JSON"
-            echo "  pyhttp                     - Python HTTP server"
-            echo "  vi, vim, svi               - NeoVim editor shortcuts"
-            echo "  ports                      - Show listening ports"
-            echo ""
-            
-            # Git Functions
-            echo "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬ GIT COMMANDS ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
-            echo "  gst                        - Git status"
-            echo "  gd                         - Git diff"
-            echo "  gl                         - Git log with graph"
-            echo "  ga                         - Git add"
-            echo "  gc                         - Git commit"
-            echo "  gp                         - Git push"
-            echo "  gco                        - Git checkout"
-            echo "  gcom <msg>                 - Git add all and commit"
-            echo "  lazyg <msg>                - Git add, commit, and push"
-            echo ""
-            
-            # System Management (Debian/Ubuntu)
-            if command -v apt >/dev/null 2>&1; then
-                echo "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬ APT MANAGEMENT ▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
-                echo "  fix-install              - Fix broken packages"
-                echo "  autoremove               - Remove unused packages"
-                echo "  system-upgrade           - Full system upgrade"
-                echo "  dist-upgrade             - Distribution upgrade"
-                echo ""
-            fi
-            
-            # Modern Tools
-            echo "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬ MODERN TOOLS ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
-            echo "  cat                        - Bat-powered cat (if available)"
-            echo "  fd                         - Modern find replacement"
-            echo "  z <dir>                    - Smart directory jumping (zoxide)"
-            echo "  ^f                         - Interactive directory search"
-            echo ""
-            
-            # Web Search (if available)
-            echo "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬ WEB SEARCH ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
-            echo "  google <query>             - Search Google"
-            echo "  ddg <query>                - Search DuckDuckGo"
-            echo "  github <query>             - Search GitHub"
-            echo "  stackoverflow <query>      - Search Stack Overflow"
-            echo ""
-            
-            # Keybindings
-            echo "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬ KEYBINDINGS ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
-            echo "  ^[[A / ^P                  - History search up"
-            echo "  ^[[B / ^N                  - History search down"
-            echo "  ^f                         - Interactive zoxide search"
-            echo "  ^M (menuselect)            - Accept completion"
-            echo ""
-            
-            # Plugin Information
-            echo "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬ PLUGINS ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
-            echo "  zsh-syntax-highlighting    - Command syntax highlighting"
-            echo "  zsh-autosuggestions        - Command suggestions from history"
-            echo "  zsh-history-substring-search - Better history search"
-            echo "  zsh-z / zoxide             - Smart directory jumping"
-            echo "  zsh-autoswitch-virtualenv  - Auto Python virtualenv activation"
-            echo "  fzf-tab                    - Enhanced tab completion"
-            echo ""
-            
-            echo "╔════════════════════════════════════════════════════════════════╗"
-            echo "║           Use 'b10k --help' to show this reference            ║"
-            echo "║         BLUX10K: Professional Terminal Environment            ║"
-            echo "╚════════════════════════════════════════════════════════════════╝"
-            echo ""
+            cat <<'EOF'
+
+╔════════════════════════════════════════════════════════════════╗
+║                   BLUX10K COMMAND REFERENCE                    ║
+║                    Terminal Power System v3.0                  ║
+╚════════════════════════════════════════════════════════════════╝
+
+▬▬▬▬▬▬▬ SYSTEM COMMANDS ▬▬▬▬▬▬▬
+  update              Universal system update (v3.0)
+  update -n           Dry-run mode (preview)
+  update -y           Non-interactive mode
+  update --help       Show update help
+  rz, reload-zsh      Reload ZSH configuration
+  zsh-health          Show ZSH health status
+
+▬▬▬▬▬▬▬ NAVIGATION ▬▬▬▬▬▬▬
+  .., ..., ....       Quick directory navigation
+  - (dash)            Go to previous directory
+  z <dir>             Smart directory jump (zoxide)
+  ^F                  Interactive directory search
+
+▬▬▬▬▬▬▬ FILE OPERATIONS ▬▬▬▬▬▬▬
+  ls, ll, la, lt      Enhanced listing (eza/ls)
+  mkcd <dir>          Create and enter directory
+  bk <file>           Backup file with timestamp
+  ff <pattern>        Find files by pattern
+  extract <archive>   Extract any archive format
+
+▬▬▬▬▬▬▬ GIT COMMANDS ▬▬▬▬▬▬▬
+  g                   Git shortcut
+  gst                 Status (short)
+  gl, gll             Log (one-line / detailed)
+  gcom <msg>          Add all & commit
+  lazyg <msg>         Add, commit & push
+
+▬▬▬▬▬▬▬ UTILITIES ▬▬▬▬▬▬▬
+  killport <port>     Kill process on port
+  myip                Show external IP
+  weather [city]      Get weather info
+  note [text]         Quick note taking
+
+▬▬▬▬▬▬▬ KEYBINDINGS ▬▬▬▬▬▬▬
+  ^P / ^N             History search up/down
+  ^F                  Interactive directory search
+  ^X^E                Edit command in $EDITOR
+  Ctrl+→ / Ctrl+←     Word navigation
+
+╔════════════════════════════════════════════════════════════════╗
+║           Use 'b10k --help' to show this reference             ║
+║         BLUX10K: Professional Terminal Environment             ║
+╚════════════════════════════════════════════════════════════════╝
+
+EOF
             ;;
         *)
-            echo "BLUX10K Terminal System"
+            echo "BLUX10K Terminal System v3.0"
             echo "Usage: b10k [option]"
-            echo "Options:"
-            echo "  -h, --help, help    Show this comprehensive command reference"
-            echo "  (no args)           Show this brief usage info"
             echo ""
-            echo "For full command reference: b10k --help"
+            echo "Options:"
+            echo "  -h, --help    Show comprehensive command reference"
+            echo ""
+            echo "For full reference: b10k --help"
             ;;
     esac
 }
 
 ############################################################################
-# 16) UPDATE FUNCTION v2.1 (SIMPLIFIED)
+# 17) UPDATE FUNCTION v3.0
 ############################################################################
 
 update() {
-    echo "BLUX10K System Update v2.1.0"
-    echo "=============================="
-    
-    local dry_run=0
-    local yes=0
-    
-    # Parse simple arguments
-    while [[ $# -gt 0 ]]; do
-        case $1 in
-            -n|--dry-run) dry_run=1 ;;
-            -y|--yes) yes=1 ;;
-            -h|--help)
-                echo "Usage: update [options]"
-                echo "  -n --dry-run    Simulate without making changes"
-                echo "  -y --yes        Non-interactive mode"
-                echo "  -h --help       Show this help"
-                return 0
-                ;;
-            *) echo "Unknown option: $1"; return 1 ;;
-        esac
-        shift
-    done
-    
-    # System package managers
-    if command -v apt >/dev/null && [[ $dry_run -eq 0 ]]; then
-        echo "Updating APT packages..."
-        sudo apt update && sudo apt full-upgrade -y
-    elif [[ $dry_run -eq 1 ]]; then
-        echo "[DRY-RUN] Would update APT packages"
-    fi
-
-    if command -v brew >/dev/null && [[ $dry_run -eq 0 ]]; then
-        echo "Updating Homebrew..."
-        brew update && brew upgrade
-    elif [[ $dry_run -eq 1 ]]; then
-        echo "[DRY-RUN] Would update Homebrew"
-    fi
-
-    if command -v flatpak >/dev/null && [[ $dry_run -eq 0 ]]; then
-        echo "Updating Flatpaks..."
-        flatpak update -y
-    elif [[ $dry_run -eq 1 ]]; then
-        echo "[DRY-RUN] Would update Flatpaks"
-    fi
-
-    # Language package managers
-    if command -v pip3 >/dev/null && [[ $dry_run -eq 0 ]]; then
-        echo "Updating Python packages..."
-        pip3 install --upgrade pip
-        pip3 list --outdated --format=freeze | cut -d= -f1 | xargs -n1 pip3 install -U
-    elif [[ $dry_run -eq 1 ]]; then
-        echo "[DRY-RUN] Would update Python packages"
-    fi
-
-    if command -v pipx >/dev/null && [[ $dry_run -eq 0 ]]; then
-        echo "Updating pipx packages..."
-        pipx upgrade-all
-    elif [[ $dry_run -eq 1 ]]; then
-        echo "[DRY-RUN] Would update pipx packages"
-    fi
-
-    if command -v npm >/dev/null && [[ $dry_run -eq 0 ]]; then
-        echo "Updating global npm packages..."
-        npm update -g
-    elif [[ $dry_run -eq 1 ]]; then
-        echo "[DRY-RUN] Would update npm packages"
-    fi
-
-    if command -v cargo >/dev/null && [[ $dry_run -eq 0 ]]; then
-        echo "Updating Rust toolchain..."
-        rustup update
-    elif [[ $dry_run -eq 1 ]]; then
-        echo "[DRY-RUN] Would update Rust"
-    fi
-
-    # Shell frameworks
-    if [[ -d "${ZSH:-$HOME/.oh-my-zsh}" ]] && [[ $dry_run -eq 0 ]]; then
-        echo "Updating Oh My Zsh..."
-        "$ZSH/tools/upgrade.sh"
-    elif [[ $dry_run -eq 1 ]]; then
-        echo "[DRY-RUN] Would update Oh My Zsh"
-    fi
-
-    if [[ -d "$ZPLUG_HOME" ]] && [[ $dry_run -eq 0 ]]; then
-        echo "Updating zplug plugins..."
-        zplug update
-    elif [[ $dry_run -eq 1 ]]; then
-        echo "[DRY-RUN] Would update zplug"
-    fi
-
-    echo "System update complete!"
-}
-
-############################################################################
-# 17) COMPLETION FOR UPDATE
-############################################################################
-_update_completion() {
-    local -a opts
-    opts=(
-        '(-n --dry-run)'{-n,--dry-run}'[Simulate without changes]'
-        '(-y --yes)'{-y,--yes}'[Non-interactive mode]'
-        '(-h --help)'{-h,--help}'[Show help]'
-    )
-    _arguments $opts
-}
-compdef _update_completion update
-
-alias update_system='update'
-alias up='update'
-
-############################################################################
-# 18) UTILITY FUNCTIONS
-############################################################################
-reload-zsh() { exec zsh }
-alias rz='reload-zsh'
-
-zsh-health() {
-    echo "ZSH Health Check:"
-    echo "• ZSH Version: $(zsh --version)"
-    echo "• Oh My Zsh: $([ -d "$ZSH" ] && echo "Installed" || echo "Not found")"
-    echo "• zplug: $([ -d "$ZPLUG_HOME" ] && echo "Installed" || echo "Not found")"
-    echo "• Plugins loaded: $(zplug list --installed 2>/dev/null | wc -l)"
-    echo "• PATH directories: ${#path}"
-    echo "• History entries: $(fc -l 1 | wc -l)"
-}
-
-############################################################################
-# 19) FINAL LOADING AND OPTIONAL MOTD
-############################################################################
-
-# Local overrides (last)
-[[ -r ~/.zshrc.local ]] && source ~/.zshrc.local
-[[ -f ~/.zsh_aliases ]] && source ~/.zsh_aliases
-
-# Private environment (API keys, etc.)
-[[ -f ~/.config/private/env.zsh ]] && source ~/.config/private/env.zsh
-
-# Compile for speed
-if [[ ! -f ~/.zshrc.zwc || ~/.zshrc -nt ~/.zshrc.zwc ]]; then
-    zcompile -R ~/.zshrc.zwc ~/.zshrc 2>/dev/null
-fi
-
-# Optional: Fastfetch/Neofetch - COMMENTED OUT BY DEFAULT
-# Uncomment the preferred option:
-
-# Option 1: Fastfetch (fast)
-# if command -v fastfetch >/dev/null 2>&1 && [[ -o interactive ]]; then
-#     fastfetch
-# fi
-
-# Option 2: Neofetch (more detailed)
-if command -v neofetch >/dev/null 2>&1 && [[ -o interactive ]]; then
-    neofetch
-fi
-
-# Option 3: Conditional based on terminal size
-# if [[ -o interactive ]] && (( LINES > 30 )); then
-#     if command -v fastfetch >/dev/null 2>&1; then
-#         fastfetch
-#     elif command -v neofetch >/dev/null 2>&1; then
-#         neofetch
-#     fi
-# fi
-
-# Final PATH export
-export PATH
-
-# Success message
-echo "BLUX10K configuration loaded successfully!"
+    local version="3.0.0"
+    local dry_run=0 yes=0 verbose=0
+    local skip_system=0 skip_lang=0 skip_shell=0
+    local update_count=0 error_count=0
+    local start_time=$(date +%s)
