@@ -13,8 +13,8 @@ provides a focused, documented baseline that you can customize.
 ```bash
 git clone https://github.com/Outer-Void/blux10k.git
 cd blux10k
-chmod +x ./scripts/install.sh
-./scripts/install.sh
+chmod +x ./install.sh
+./install.sh
 ```
 
 The installer copies this repo into `~/.config/blux10k`, adds a managed block to `~/.zshrc`, and
