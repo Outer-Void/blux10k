@@ -1,4 +1,8 @@
-# BLUX10K
+<p align="center">
+  <img src="docs/assets/blux10k.png" alt="BLUX10K" width="600">
+</p>
+
+# BLUX10K v4.0 (Stable)
 
 BLUX10K is a curated Zsh setup with an installer, bundled fonts, and ready-to-use configuration
 files for Starship and Neofetch. It is **not** a full dotfiles framework or a plugin manager; it
