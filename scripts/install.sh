@@ -175,6 +175,12 @@ detect_platform() {
     log_debug "CPU Cores: ${CPU_CORES}"
     log_debug "RAM: ${RAM_GB}GB"
     
+    local platform_forced="false"
+    local apt_locked="false"
+    local termux_prefix="false"
+    local termux_version="false"
+    local termux_android="false"
+
     # Detect operating system
     case "$(uname -s)" in
         Linux*)
@@ -263,6 +269,23 @@ detect_platform() {
             log_warn "Unknown operating system: $(uname -s)"
             ;;
     esac
+
+    # Apply platform override
+    case "${BLUX10K_FORCE_PLATFORM:-}" in
+        termux)
+            OS_TYPE="termux"
+            PACKAGE_MANAGER="pkg"
+            IS_TERMUX="true"
+            platform_forced="true"
+            log_info "Platform override: termux"
+            ;;
+        debian|apt)
+            OS_TYPE="debian"
+            PACKAGE_MANAGER="apt"
+            platform_forced="true"
+            log_info "Platform override: debian"
+            ;;
+    esac
     
     # Detect WSL
     if [[ "$OS_TYPE" == "linux" ]] && (grep -qi microsoft /proc/version 2>/dev/null || [[ -d "/mnt/c/Windows" ]]); then
@@ -275,14 +298,6 @@ detect_platform() {
         log_info "Running in WSL ${WSL_VERSION}"
     fi
     
-    # Detect Termux (Android)
-    if [[ -d "/data/data/com.termux" ]] && command -v pkg >/dev/null 2>&1; then
-        IS_TERMUX="true"
-        OS_TYPE="termux"
-        PACKAGE_MANAGER="pkg"
-        log_info "Detected Termux (Android)"
-    fi
-
     # Detect proot environments
     if grep -qi "proot" /proc/self/status 2>/dev/null \
         || [[ -n "${PROOT_VERSION:-}" ]] \
@@ -292,14 +307,47 @@ detect_platform() {
         log_info "Detected proot environment"
     fi
 
-    # Prefer apt in proot if available
-    if [[ -n "${IS_PROOT:-}" ]] && command -v apt-get >/dev/null 2>&1; then
+    if [[ "${platform_forced}" != "true" ]] && [[ "${OS_TYPE}" == "debian" ]] && command -v apt-get >/dev/null 2>&1; then
         PACKAGE_MANAGER="apt"
+        apt_locked="true"
+    fi
+
+    # Prefer apt in proot if available
+    if [[ -n "${IS_PROOT:-}" ]] && command -v apt-get >/dev/null 2>&1 && [[ "${platform_forced}" != "true" ]]; then
+        PACKAGE_MANAGER="apt"
+    fi
+
+    if [[ "${PREFIX:-}" == *"/data/data/com.termux/files/usr"* ]]; then
+        termux_prefix="true"
+    fi
+
+    if [[ -n "${TERMUX_VERSION:-}" ]]; then
+        termux_version="true"
+    fi
+
+    if [[ "$(uname -o 2>/dev/null)" == "Android" ]] || [[ -f "/system/build.prop" ]]; then
+        termux_android="true"
+    fi
+
+    # Detect Termux (Android)
+    if [[ "${platform_forced}" != "true" ]] \
+        && [[ "${apt_locked}" != "true" ]] \
+        && [[ "${IS_PROOT:-}" != "true" ]] \
+        && [[ "${termux_prefix}" == "true" || "${termux_version}" == "true" ]] \
+        && command -v pkg >/dev/null 2>&1 \
+        && { [[ "${termux_android}" == "true" ]] || [[ ! -f "/etc/os-release" ]] || [[ "${ID:-}" == "android" ]] || [[ "${ID_LIKE:-}" == *"android"* ]]; }; then
+        IS_TERMUX="true"
+        OS_TYPE="termux"
+        PACKAGE_MANAGER="pkg"
+        log_info "Detected Termux (Android)"
     fi
 
     # Ensure package manager is available; fallback between apt and pkg
     if [[ "${PACKAGE_MANAGER}" == "pkg" ]] && ! command -v pkg >/dev/null 2>&1; then
-        if command -v apt-get >/dev/null 2>&1; then
+        if [[ "${platform_forced}" == "true" ]]; then
+            log_error "pkg not found but BLUX10K_FORCE_PLATFORM is set"
+            return 1
+        elif command -v apt-get >/dev/null 2>&1; then
             log_warn "pkg not found, falling back to apt"
             PACKAGE_MANAGER="apt"
         else
@@ -309,7 +357,10 @@ detect_platform() {
     fi
 
     if [[ "${PACKAGE_MANAGER}" == "apt" ]] && ! command -v apt-get >/dev/null 2>&1; then
-        if command -v pkg >/dev/null 2>&1; then
+        if [[ "${platform_forced}" == "true" ]]; then
+            log_error "apt-get not found but BLUX10K_FORCE_PLATFORM is set"
+            return 1
+        elif command -v pkg >/dev/null 2>&1; then
             log_warn "apt-get not found, falling back to pkg"
             PACKAGE_MANAGER="pkg"
         else
@@ -317,6 +368,8 @@ detect_platform() {
             return 1
         fi
     fi
+
+    log_debug "Platform summary: OS_TYPE=${OS_TYPE} PACKAGE_MANAGER=${PACKAGE_MANAGER} IS_PROOT=${IS_PROOT:-false} TERMUX_PREFIX=${termux_prefix} TERMUX_VERSION=${termux_version}"
     
     # Detect container environments
     if [[ -f "/.dockerenv" ]] || grep -q docker /proc/1/cgroup 2>/dev/null; then
@@ -661,7 +714,7 @@ install_core_packages() {
                 "zsh" "git" "gnupg2" "openssh-client" "curl" "wget" "ca-certificates"
                 "unzip" "zip" "tar" "gzip" "bzip2" "xz-utils" "p7zip-full" "unrar"
                 "lsof" "iproute2" "net-tools" "file" "procps" "htop" "nmap" "tcpdump"
-                "python3" "python3-pip" "python3-venv" "pipx" "jq" "yq"
+                "python3" "python3-pip" "python3-venv" "python3-numpy" "pipx" "jq" "yq"
                 "neovim" "tmux" "screen" "rsync" "sshfs"
             )
             ;;
@@ -1066,11 +1119,30 @@ b10k_source "\${B10K_DIR}/modules/zsh/keybindings.zsh"
 platform="generic"
 case "\$(uname -s)" in
     Linux*)
-        if [[ -n "\${TERMUX_VERSION:-}" ]] || [[ "\${PREFIX:-}" == *"com.termux"* ]]; then
-            platform="termux"
-        elif [[ -n "\${WSL_DISTRO_NAME:-}" ]]; then
+        termux_prefix="false"
+        termux_version="false"
+        termux_android="false"
+        if [[ "\${PREFIX:-}" == *"/data/data/com.termux/files/usr"* ]]; then
+            termux_prefix="true"
+        fi
+        if [[ -n "\${TERMUX_VERSION:-}" ]]; then
+            termux_version="true"
+        fi
+        if [[ "\$(uname -o 2>/dev/null)" == "Android" ]] || [[ -f "/system/build.prop" ]]; then
+            termux_android="true"
+        fi
+        if [[ "\${termux_prefix}" == "true" || "\${termux_version}" == "true" ]]; then
+            if [[ -f "/etc/os-release" ]]; then
+                if grep -qiE '^(ID|NAME)=.*android' /etc/os-release 2>/dev/null || [[ "\${termux_android}" == "true" ]]; then
+                    platform="termux"
+                fi
+            elif [[ "\${termux_android}" == "true" ]]; then
+                platform="termux"
+            fi
+        fi
+        if [[ "\${platform}" != "termux" && -n "\${WSL_DISTRO_NAME:-}" ]]; then
             platform="wsl"
-        else
+        elif [[ "\${platform}" != "termux" ]]; then
             platform="linux"
         fi
         ;;
