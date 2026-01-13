@@ -17,8 +17,8 @@ A comprehensive, cross-platform terminal environment designed for modern develop
 ```bash
 git clone https://github.com/Outer-Void/blux10k.git
 cd blux10k
-chmod +x install.sh
-./install.sh
+chmod +x ./scripts/install.sh
+./scripts/install.sh
 ```
 
 ## Manual Installation
