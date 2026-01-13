@@ -14,10 +14,13 @@ IFS=$'\n\t'
 readonly BLUX10K_VERSION="4.0.0"
 readonly BLUX10K_REPO="https://github.com/Justadudeinspace/blux10k"
 readonly BLUX10K_DOCS="https://blux10k.github.io/docs"
-readonly BLUX10K_CONFIG_DIR="${HOME}/.config/blux10k"
-readonly BLUX10K_CACHE_DIR="${HOME}/.cache/blux10k"
+readonly B10K_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/blux10k"
+readonly BLUX10K_CONFIG_DIR="${B10K_DIR}"
+readonly BLUX10K_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/blux10k"
 readonly BLUX10K_LOG_DIR="${BLUX10K_CACHE_DIR}/logs"
 readonly BLUX10K_INSTALL_LOG="${BLUX10K_LOG_DIR}/install-$(date +%Y%m%d-%H%M%S).log"
+readonly B10K_DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/blux10k"
+readonly P10K_DIR="${B10K_DATA_DIR}/p10k/powerlevel10k"
 
 # Color codes for output (ANSI 256-color support)
 readonly RED='\033[0;31m'
@@ -848,10 +851,42 @@ install_zsh_plugins() {
     fi
     
     # Set zsh as default shell
-    if [[ "$SHELL" != "$(which zsh)" ]]; then
+    local zsh_path
+    zsh_path=$(command -v zsh || true)
+    if [[ -n "$zsh_path" ]] && [[ "$SHELL" != "$zsh_path" ]]; then
         log_info "Setting zsh as default shell..."
-        chsh -s "$(which zsh)"
-        log_success "Default shell changed to zsh"
+        if chsh -s "$zsh_path" 2>/dev/null; then
+            log_success "Default shell changed to zsh"
+        else
+            log_warn "Could not change default shell. Run manually: chsh -s $zsh_path"
+        fi
+    fi
+}
+
+install_powerlevel10k() {
+    log_section "Powerlevel10k"
+
+    if [[ "$OS_TYPE" == "windows" ]]; then
+        log_info "Windows detected, skipping Powerlevel10k install"
+        return 0
+    fi
+
+    mkdir -p "$(dirname "$P10K_DIR")"
+
+    if [[ -d "$P10K_DIR/.git" ]]; then
+        log_info "Updating Powerlevel10k..."
+        if git -C "$P10K_DIR" pull --ff-only; then
+            log_success "Powerlevel10k updated"
+        else
+            log_warn "Powerlevel10k update failed; continuing"
+        fi
+    else
+        log_info "Installing Powerlevel10k..."
+        if git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$P10K_DIR"; then
+            log_success "Powerlevel10k installed"
+        else
+            log_warn "Powerlevel10k install failed; continuing"
+        fi
     fi
 }
 
@@ -867,13 +902,14 @@ install_fonts() {
     local font_dir
     case $OS_TYPE in
         linux|debian|ubuntu|arch|fedora|wsl|alpine)
-            font_dir="$HOME/.local/share/fonts"
+            font_dir="${XDG_DATA_HOME:-$HOME/.local/share}/fonts/blux10k"
             ;;
         macos)
             font_dir="$HOME/Library/Fonts"
             ;;
         termux)
-            font_dir="$HOME/.termux/fonts"
+            log_info "Termux detected: run fonts/install-fonts.sh for manual setup"
+            return 0
             ;;
         windows)
             font_dir="$HOME/AppData/Local/Microsoft/Windows/Fonts"
@@ -881,40 +917,57 @@ install_fonts() {
             return 0
             ;;
         *)
-            font_dir="$HOME/.local/share/fonts"
+            font_dir="${XDG_DATA_HOME:-$HOME/.local/share}/fonts/blux10k"
             ;;
     esac
-    
+
     mkdir -p "$font_dir"
-    
-    # Download MesloLGS NF fonts
-    local font_url="https://github.com/romkatv/powerlevel10k-media/raw/master"
-    local fonts=(
-        "MesloLGS%20NF%20Regular.ttf"
-        "MesloLGS%20NF%20Bold.ttf"
-        "MesloLGS%20NF%20Italic.ttf"
-        "MesloLGS%20NF%20Bold%20Italic.ttf"
-    )
-    
-    local downloaded=0
-    for font in "${fonts[@]}"; do
-        local font_file="${font//%20/ }"
-        if curl -fSL "$font_url/$font" -o "$font_dir/$font_file" 2>/dev/null; then
-            log_success "Downloaded: $font_file"
-            ((downloaded++))
-        else
-            log_warn "Failed to download: $font_file"
-        fi
-    done
-    
+
+    local copied=0
+    if [[ -d "fonts/meslolgs-nf" ]]; then
+        cp -a "fonts/meslolgs-nf"/. "$font_dir"/
+        copied=$((copied + 1))
+        log_success "Copied MesloLGS NF fonts to $font_dir"
+    fi
+
+    if [[ -d "fonts/alternatives" ]]; then
+        cp -a "fonts/alternatives"/. "$font_dir"/
+        copied=$((copied + 1))
+        log_success "Copied alternative fonts to $font_dir"
+    fi
+
+    if [[ $copied -eq 0 ]]; then
+        # Fallback to download MesloLGS NF fonts
+        local font_url="https://github.com/romkatv/powerlevel10k-media/raw/master"
+        local fonts=(
+            "MesloLGS%20NF%20Regular.ttf"
+            "MesloLGS%20NF%20Bold.ttf"
+            "MesloLGS%20NF%20Italic.ttf"
+            "MesloLGS%20NF%20Bold%20Italic.ttf"
+        )
+
+        local downloaded=0
+        for font in "${fonts[@]}"; do
+            local font_file="${font//%20/ }"
+            if curl -fSL "$font_url/$font" -o "$font_dir/$font_file" 2>/dev/null; then
+                log_success "Downloaded: $font_file"
+                ((downloaded++))
+            else
+                log_warn "Failed to download: $font_file"
+            fi
+        done
+
+        copied=$downloaded
+    fi
+
     # Update font cache
     if command -v fc-cache >/dev/null 2>&1; then
-        fc-cache -fv "$font_dir"
+        fc-cache -f "$font_dir"
         log_success "Font cache updated"
     fi
-    
-    if [[ $downloaded -gt 0 ]]; then
-        log_success "Installed $downloaded fonts to $font_dir"
+
+    if [[ $copied -gt 0 ]]; then
+        log_success "Installed fonts to $font_dir"
         log_info "Please set your terminal font to 'MesloLGS NF'"
     else
         log_error "No fonts were installed"
@@ -926,15 +979,144 @@ install_fonts() {
 # CONFIGURATION DEPLOYMENT
 # ===========================================================================
 
+backup_file() {
+    local target="$1"
+    if [[ -f "$target" || -L "$target" ]]; then
+        local backup="${target}.bak.$(date +%Y%m%d-%H%M%S)"
+        cp -p "$target" "$backup"
+        log_info "Backup created: $backup"
+    fi
+}
+
+ensure_blux10k_block() {
+    local target="$1"
+    local block_start="# >>> BLUX10K START"
+    local block_content
+    block_content=$(cat << 'EOF'
+# >>> BLUX10K START
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+source "${XDG_CONFIG_HOME:-$HOME/.config}/blux10k/blux10k.zsh"
+# <<< BLUX10K END
+EOF
+)
+
+    local existing_count=0
+    if [[ -f "$target" ]]; then
+        existing_count=$(grep -c "^${block_start}$" "$target" || true)
+        if [[ "$existing_count" -eq 1 ]] && grep -Fq "$block_content" "$target"; then
+            log_info "BLUX10K block already present in $(basename "$target")"
+            return 0
+        fi
+        backup_file "$target"
+        awk 'BEGIN{inblock=0}
+            /^# >>> BLUX10K START$/ {inblock=1; next}
+            /^# <<< BLUX10K END$/ {inblock=0; next}
+            !inblock {print}' "$target" > "${target}.tmp"
+        mv "${target}.tmp" "$target"
+    fi
+
+    printf "\n%s\n" "$block_content" >> "$target"
+    log_success "Added BLUX10K block to $(basename "$target")"
+}
+
+sync_repo_dir() {
+    local src_dir="$1"
+    local dst_dir="$2"
+
+    if [[ -d "$src_dir" ]]; then
+        mkdir -p "$dst_dir"
+        if command -v rsync >/dev/null 2>&1; then
+            rsync -a --delete "$src_dir"/ "$dst_dir"/
+        else
+            cp -a "$src_dir"/. "$dst_dir"/
+        fi
+        log_success "Synced $(basename "$src_dir") -> $dst_dir"
+    else
+        log_warn "Source directory not found: $src_dir"
+    fi
+}
+
+create_blux10k_entrypoint() {
+    local entrypoint="$B10K_DIR/blux10k.zsh"
+
+    cat > "$entrypoint" << EOF
+#!/usr/bin/env zsh
+# BLUX10K Entrypoint (generated by install.sh)
+
+export XDG_CONFIG_HOME="\${XDG_CONFIG_HOME:-$HOME/.config}"
+export XDG_DATA_HOME="\${XDG_DATA_HOME:-$HOME/.local/share}"
+export B10K_DIR="\${XDG_CONFIG_HOME}/blux10k"
+export BLUX10K_CONFIG_DIR="\${B10K_DIR}"
+export P10K_DIR="\${XDG_DATA_HOME}/blux10k/p10k/powerlevel10k"
+
+b10k_source() {
+    local file="\$1"
+    if [[ -f "\$file" ]]; then
+        source "\$file"
+    else
+        echo "⚠️  BLUX10K: missing \${file}" >&2
+    fi
+}
+
+b10k_source "\${B10K_DIR}/modules/zsh/plugins.zsh"
+b10k_source "\${B10K_DIR}/modules/zsh/aliases.zsh"
+b10k_source "\${B10K_DIR}/modules/zsh/functions.zsh"
+b10k_source "\${B10K_DIR}/modules/zsh/keybindings.zsh"
+
+platform="generic"
+case "\$(uname -s)" in
+    Linux*)
+        if [[ -n "\${TERMUX_VERSION:-}" ]] || [[ "\${PREFIX:-}" == *"com.termux"* ]]; then
+            platform="termux"
+        elif [[ -n "\${WSL_DISTRO_NAME:-}" ]]; then
+            platform="wsl"
+        else
+            platform="linux"
+        fi
+        ;;
+    Darwin*)
+        platform="macos"
+        ;;
+esac
+
+for platform_file in "\${B10K_DIR}/modules/zsh/platform/\${platform}.zsh" "\${B10K_DIR}/modules/zsh/platform/\${platform}-"*.zsh(N); do
+    [[ -f "\${platform_file}" ]] && b10k_source "\${platform_file}"
+done
+
+b10k_source "\${B10K_DIR}/modules/update/update-core.zsh"
+
+if [[ -f "\${P10K_DIR}/powerlevel10k.zsh-theme" ]]; then
+    source "\${P10K_DIR}/powerlevel10k.zsh-theme"
+else
+    echo "⚠️  BLUX10K: Powerlevel10k not found at \${P10K_DIR}" >&2
+fi
+
+if [[ "\${BLUX10K_USE_STARSHIP:-0}" == "1" ]]; then
+    if command -v starship >/dev/null 2>&1; then
+        eval "\$(starship init zsh)"
+    else
+        echo "⚠️  BLUX10K: Starship requested but not installed" >&2
+    fi
+fi
+EOF
+
+    chmod 644 "$entrypoint"
+    log_success "Created BLUX10K entrypoint at $entrypoint"
+}
+
 deploy_configurations() {
     log_section "Configuration Deployment"
     
     # Create directory structure
     local dirs=(
-        "$BLUX10K_CONFIG_DIR"
-        "$BLUX10K_CONFIG_DIR/modules"
-        "$BLUX10K_CONFIG_DIR/scripts"
-        "$BLUX10K_CONFIG_DIR/templates"
+        "$B10K_DIR"
+        "$B10K_DIR/modules"
+        "$B10K_DIR/scripts"
+        "$B10K_DIR/templates"
+        "$B10K_DIR/configs"
+        "$B10K_DIR/resources"
+        "$B10K_DIR/tools"
+        "$B10K_DIR/examples"
         "$HOME/.config/private"
         "$HOME/.config/neofetch"
         "$HOME/.local/bin"
@@ -947,11 +1129,42 @@ deploy_configurations() {
         mkdir -p "$dir"
     done
     
-    # Deploy main configurations
-    deploy_file ".zshrc" "$HOME/.zshrc"
-    deploy_file ".p10k.zsh" "$HOME/.p10k.zsh"
-    deploy_file "starship.toml" "$HOME/.config/starship.toml"
-    deploy_file "neofetch.conf" "$HOME/.config/neofetch/config.conf"
+    # Sync repository directories into BLUX10K config home
+    sync_repo_dir "configs" "$B10K_DIR/configs"
+    sync_repo_dir "modules" "$B10K_DIR/modules"
+    sync_repo_dir "resources" "$B10K_DIR/resources"
+    sync_repo_dir "tools" "$B10K_DIR/tools"
+    sync_repo_dir "templates" "$B10K_DIR/templates"
+    sync_repo_dir "examples" "$B10K_DIR/examples"
+    if [[ -d "ci" ]]; then
+        sync_repo_dir "ci" "$B10K_DIR/ci"
+    fi
+    if [[ -d "tests" ]]; then
+        sync_repo_dir "tests" "$B10K_DIR/tests"
+    fi
+
+    # Starship configuration handling
+    local starship_src="configs/starship.toml"
+    local starship_dst="${XDG_CONFIG_HOME:-$HOME/.config}/starship.toml"
+    BLUX10K_STARSHIP_STATUS="not-installed"
+    if [[ -f "$starship_src" ]]; then
+        if [[ ! -f "$starship_dst" ]]; then
+            mkdir -p "$(dirname "$starship_dst")"
+            cp "$starship_src" "$starship_dst"
+            BLUX10K_STARSHIP_STATUS="installed"
+            log_success "Installed starship.toml to $starship_dst"
+        else
+            BLUX10K_STARSHIP_STATUS="preserved"
+            log_info "Preserved existing starship.toml at $starship_dst"
+        fi
+    fi
+
+    # Deploy neofetch config if present
+    deploy_file "b10k.neofetch.conf" "$HOME/.config/neofetch/config.conf"
+
+    # Create BLUX10K entrypoint and ensure zshrc block
+    create_blux10k_entrypoint
+    ensure_blux10k_block "$HOME/.zshrc"
     
     # Deploy private environment template
     if [[ ! -f "$HOME/.config/private/env.zsh" ]]; then
@@ -962,7 +1175,7 @@ deploy_configurations() {
     chmod 700 "$HOME/.config/private"
     chmod 600 "$HOME/.config/private/env.zsh" 2>/dev/null || true
     
-    # Create module structure
+    # Create module structure (legacy scaffold if no modules present)
     create_module_structure
     
     log_success "Configuration deployment completed"
@@ -981,6 +1194,11 @@ deploy_file() {
 }
 
 create_module_structure() {
+    if [[ -d "$B10K_DIR/modules" ]] && ls -1 "$B10K_DIR/modules"/*.zsh >/dev/null 2>&1; then
+        log_info "Module files already present; skipping legacy module scaffold"
+        return 0
+    fi
+
     local modules=(
         "01-environment.zsh"
         "02-path.zsh"
@@ -995,11 +1213,11 @@ create_module_structure() {
     )
     
     for module in "${modules[@]}"; do
-        touch "$BLUX10K_CONFIG_DIR/modules/$module"
+        touch "$B10K_DIR/modules/$module"
     done
     
     # Create main loader
-    cat > "$BLUX10K_CONFIG_DIR/loader.zsh" << 'EOF'
+    cat > "$B10K_DIR/loader.zsh" << 'EOF'
 #!/usr/bin/env zsh
 # BLUX10K Module Loader v4.0.0
 
@@ -1203,6 +1421,56 @@ EOF
 # FINALIZATION
 # ===========================================================================
 
+run_validation_report() {
+    log_section "Installation Validation"
+
+    if command -v zsh >/dev/null 2>&1; then
+        log_success "zsh available: $(command -v zsh)"
+    else
+        log_warn "zsh not found"
+    fi
+
+    if [[ -f "$B10K_DIR/blux10k.zsh" ]]; then
+        log_success "BLUX10K entrypoint present"
+    else
+        log_warn "BLUX10K entrypoint missing: $B10K_DIR/blux10k.zsh"
+    fi
+
+    if [[ -f "$HOME/.zshrc" ]]; then
+        local start_count end_count
+        start_count=$(grep -c "^# >>> BLUX10K START$" "$HOME/.zshrc" || true)
+        end_count=$(grep -c "^# <<< BLUX10K END$" "$HOME/.zshrc" || true)
+        if [[ "$start_count" -eq 1 ]] && [[ "$end_count" -eq 1 ]]; then
+            log_success "BLUX10K block present once in ~/.zshrc"
+        else
+            log_warn "BLUX10K block count mismatch in ~/.zshrc (start=$start_count, end=$end_count)"
+        fi
+    else
+        log_warn "~/.zshrc missing"
+    fi
+
+    if [[ -f "$P10K_DIR/powerlevel10k.zsh-theme" ]]; then
+        log_success "Powerlevel10k theme present"
+    else
+        log_warn "Powerlevel10k theme missing"
+    fi
+
+    case "${BLUX10K_STARSHIP_STATUS:-unknown}" in
+        installed)
+            log_success "Starship config installed"
+            ;;
+        preserved)
+            log_info "Starship config preserved"
+            ;;
+        not-installed)
+            log_info "Starship config not installed"
+            ;;
+        *)
+            log_warn "Starship config status unknown"
+            ;;
+    esac
+}
+
 finalize_installation() {
     log_section "Finalizing Installation"
     
@@ -1221,6 +1489,7 @@ finalize_installation() {
     
     # Print completion message
     print_completion_message
+    run_validation_report
 }
 
 print_completion_message() {
@@ -1292,6 +1561,7 @@ main() {
     install_core_packages
     install_modern_tools
     install_zsh_plugins
+    install_powerlevel10k
     install_fonts
     deploy_configurations
     post_install_setup
