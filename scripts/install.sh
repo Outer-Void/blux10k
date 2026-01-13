@@ -1035,9 +1035,8 @@ case "$(uname -s)" in
 esac
 
 # Update plugins
-if [[ -d "$HOME/.local/share/zinit" ]]; then
-    zinit self-update
-    zinit update --all
+if [[ -d "$HOME/.local/share/zinit" ]] && command -v zsh >/dev/null 2>&1; then
+    zsh -ic "zinit self-update && zinit update --all" >/dev/null 2>&1 || true
 fi
 
 # Update configuration
