@@ -435,6 +435,38 @@ apt_get_install() {
     fi
 }
 
+apt_is_package_available() {
+    local package_name="$1"
+    apt-cache show "$package_name" >/dev/null 2>&1
+}
+
+apt_install_optional_candidates() {
+    local tool="$1"
+    shift
+    local candidates=("$@")
+    local candidate
+    local installed=0
+
+    for candidate in "${candidates[@]}"; do
+        if [[ -z "$candidate" ]]; then
+            continue
+        fi
+        if apt_is_package_available "$candidate"; then
+            if apt_get_install "$candidate"; then
+                log_success "Installed ${tool} (${candidate})"
+                installed=1
+                break
+            else
+                log_warn "SKIP: ${tool} (${candidate} install failed)"
+            fi
+        fi
+    done
+
+    if [[ "$installed" -eq 0 ]]; then
+        log_warn "SKIP: ${tool} (not available in repo)"
+    fi
+}
+
 apt_get_upgrade() {
     local sudo_prefix
     sudo_prefix=$(get_sudo_prefix)
@@ -1883,6 +1915,7 @@ install_modern_tools() {
     log_section "Modern Tools Installation"
     
     local tools_to_install=()
+    local missing_tools=()
     
     # Check which tools are already installed
     declare -A tools=(
@@ -1909,7 +1942,7 @@ install_modern_tools() {
         apt)
             package_names=(
                 ["bat"]="bat"
-                ["exa"]="exa"
+                ["exa"]="eza"
                 ["fd"]="fd-find"
                 ["ripgrep"]="ripgrep"
                 ["fzf"]="fzf"
@@ -1922,7 +1955,7 @@ install_modern_tools() {
                 ["procs"]="procs"
                 ["sd"]="sd"
                 ["tealdeer"]="tealdeer"
-                ["bottom"]="bottom"
+                ["bottom"]="btm"
             )
             ;;
         brew)
@@ -2005,23 +2038,78 @@ install_modern_tools() {
     
     # Check which tools are missing
     for tool in "${!tools[@]}"; do
-        if ! command -v "$tool" >/dev/null 2>&1; then
-            if [[ -n "${package_names[$tool]:-}" ]]; then
-                tools_to_install+=("${package_names[$tool]}")
+        local tool_installed=false
+        case "$tool" in
+            exa)
+                if command -v exa >/dev/null 2>&1 || command -v eza >/dev/null 2>&1; then
+                    tool_installed=true
+                fi
+                ;;
+            bottom)
+                if command -v bottom >/dev/null 2>&1 || command -v btm >/dev/null 2>&1; then
+                    tool_installed=true
+                fi
+                ;;
+            *)
+                if command -v "$tool" >/dev/null 2>&1; then
+                    tool_installed=true
+                fi
+                ;;
+        esac
+
+        if [[ "$tool_installed" == "false" ]]; then
+            if [[ "$PACKAGE_MANAGER" == "apt" ]]; then
+                missing_tools+=("$tool")
             else
-                tools_to_install+=("$tool")
+                if [[ -n "${package_names[$tool]:-}" ]]; then
+                    tools_to_install+=("${package_names[$tool]}")
+                else
+                    tools_to_install+=("$tool")
+                fi
             fi
         fi
     done
     
     # Install missing tools
+    if [[ "$PACKAGE_MANAGER" == "apt" ]]; then
+        if [[ ${#missing_tools[@]} -gt 0 ]]; then
+            log_info "Installing modern tools (apt): ${missing_tools[*]}"
+            for tool in "${missing_tools[@]}"; do
+                local candidates=()
+                case "$tool" in
+                    exa)
+                        candidates=("eza" "exa")
+                        ;;
+                    bottom)
+                        candidates=("btm" "bottom")
+                        ;;
+                    *)
+                        if [[ -n "${package_names[$tool]:-}" ]]; then
+                            candidates=("${package_names[$tool]}")
+                        else
+                            candidates=("$tool")
+                        fi
+                        ;;
+                esac
+                apt_install_optional_candidates "$tool" "${candidates[@]}"
+            done
+
+            # Special handling for tools that might need different installation methods
+            install_rust_tools
+            install_go_tools
+            install_python_tools
+
+            log_success "Modern tools installation completed"
+        else
+            log_info "All modern tools are already installed"
+        fi
+        return
+    fi
+
     if [[ ${#tools_to_install[@]} -gt 0 ]]; then
         log_info "Installing modern tools: ${tools_to_install[*]}"
-        
+
         case "$PACKAGE_MANAGER" in
-            apt)
-                apt_get_install "${tools_to_install[@]}"
-                ;;
             brew)
                 brew install "${tools_to_install[@]}"
                 ;;
@@ -2048,12 +2136,12 @@ install_modern_tools() {
                 log_warn "Modern tools installation not implemented for $PACKAGE_MANAGER"
                 ;;
         esac
-        
+
         # Special handling for tools that might need different installation methods
         install_rust_tools
         install_go_tools
         install_python_tools
-        
+
         log_success "Modern tools installed"
     else
         log_info "All modern tools are already installed"
