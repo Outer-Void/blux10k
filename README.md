@@ -59,6 +59,17 @@ able to change the default shell. See [Platforms](docs/PLATFORMS.md).
 On Debian/Ubuntu, the installer uses `eza` (replacement for `exa`) and installs `bottom` as the
 `btm` package.
 
+## Tests
+
+1. Run `./install.sh --profile` and verify the platform detection output.
+2. Run the installer and confirm it completes without errors.
+3. Verify `~/.config/starship.toml` is deployed from `configs/starship.toml`.
+4. Confirm `~/.zshrc` contains the BLUX10K prompt block.
+5. Verify config deploy:
+   - After a dry run is not enough, but minimally ensure logic exists and paths are correct.
+6. Ensure the zshrc activation block is guarded and idempotent:
+   - Running installer twice must not duplicate the BLUX10K NEOFETCH block.
+
 ## License
 
 MIT License — see [LICENSE](./LICENSE).
