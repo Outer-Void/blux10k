@@ -20,6 +20,9 @@ chmod +x ./install.sh
 The installer copies this repo into `~/.config/blux10k`, adds a managed block to `~/.zshrc`, and
 creates `~/.config/private/env.zsh` if it doesn’t exist.
 
+During installation you will choose a prompt engine (Powerlevel10k or Starship). To change it
+later, re-run the installer with `--prompt=p10k` or `--prompt=starship`.
+
 ## Fonts
 
 Install bundled fonts with:

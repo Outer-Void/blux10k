@@ -116,7 +116,7 @@ show_interactive_menu() {
     # Prompt selection
     echo -e "${CYAN}${EMOJI_CHOICE} Select your preferred prompt system:${NC}"
     echo ""
-    echo -e "  1) ${GREEN}Powerlevel10k${NC} - Highly customizable, fast ZSH theme"
+    echo -e "  1) ${GREEN}Powerlevel10k${NC} - Highly customizable, fast ZSH theme (recommended)"
     echo -e "     • Rich, configurable prompts"
     echo -e "     • Instant prompt for fast startup"
     echo -e "     • Extensive segment library"
@@ -126,15 +126,13 @@ show_interactive_menu() {
     echo -e "     • Written in Rust for speed"
     echo -e "     • Language-aware prompts"
     echo ""
-    echo -e "  3) ${YELLOW}Skip prompt selection${NC}"
-    echo ""
     
     local choice=""
     while true; do
-        read -rp "Enter your choice (1-3): " choice
+        read -rp "Enter your choice (1-2): " choice
         case $choice in
             1)
-                SELECTED_PROMPT="powerlevel10k"
+                SELECTED_PROMPT="p10k"
                 echo -e "${GREEN}✓ Selected Powerlevel10k${NC}"
                 break
                 ;;
@@ -143,13 +141,8 @@ show_interactive_menu() {
                 echo -e "${GREEN}✓ Selected Starship${NC}"
                 break
                 ;;
-            3)
-                SELECTED_PROMPT="none"
-                echo -e "${YELLOW}✓ Skipping prompt selection${NC}"
-                break
-                ;;
             *)
-                echo -e "${RED}Invalid choice. Please enter 1, 2, or 3.${NC}"
+                echo -e "${RED}Invalid choice. Please enter 1 or 2.${NC}"
                 ;;
         esac
     done
@@ -246,6 +239,21 @@ show_interactive_menu() {
     fi
     
     echo ""
+}
+
+normalize_prompt_choice() {
+    local choice="${1:-}"
+    case "${choice}" in
+        p10k|powerlevel10k)
+            echo "p10k"
+            ;;
+        starship)
+            echo "starship"
+            ;;
+        *)
+            echo "p10k"
+            ;;
+    esac
 }
 
 select_custom_plugins() {
@@ -540,11 +548,17 @@ detect_platform() {
     
     local platform_forced="false"
     local apt_locked="false"
-    local termux_prefix="false"
     local termux_version="false"
-    local termux_android="false"
-    local termux_data_dir="false"
+    local termux_usr_dir="false"
+    local termux_pkg_android="false"
     local android_kernel="false"
+    local os_release_present="false"
+    local os_release_android="false"
+    local os_release_debian_like="false"
+    local proot_signal="false"
+    local android_host_markers="false"
+    local termux_reasons=()
+    local proot_reasons=()
 
     if [[ "$(uname -o 2>/dev/null)" == "Android" ]] || [[ -f "/system/build.prop" ]]; then
         android_kernel="true"
@@ -555,6 +569,7 @@ detect_platform() {
         Linux*)
             if [[ -f "/etc/os-release" ]]; then
                 source /etc/os-release
+                os_release_present="true"
                 OS_NAME="${NAME:-Unknown}"
                 OS_VERSION="${VERSION_ID:-Unknown}"
                 
@@ -647,6 +662,40 @@ detect_platform() {
             ;;
     esac
 
+    if [[ "${os_release_present}" == "true" ]]; then
+        if [[ "${ID:-}" == "android" ]] || [[ "${NAME:-}" == *Android* ]]; then
+            os_release_android="true"
+        fi
+        if [[ "${ID:-}" == "debian" || "${ID:-}" == "ubuntu" ]] \
+            || [[ "${ID_LIKE:-}" == *debian* || "${ID_LIKE:-}" == *ubuntu* ]]; then
+            os_release_debian_like="true"
+        fi
+    fi
+
+    if [[ -n "${TERMUX_VERSION:-}" ]]; then
+        termux_version="true"
+        termux_reasons+=("TERMUX_VERSION is set")
+    fi
+
+    if [[ -d "/data/data/com.termux/files/usr" ]]; then
+        termux_usr_dir="true"
+        termux_reasons+=("found /data/data/com.termux/files/usr")
+    fi
+
+    if [[ "${android_kernel}" == "true" ]] \
+        && command -v pkg >/dev/null 2>&1 \
+        && { [[ "${os_release_present}" != "true" ]] || [[ "${os_release_android}" == "true" ]]; }; then
+        termux_pkg_android="true"
+        termux_reasons+=("Android kernel with pkg available and Android-like or missing /etc/os-release")
+    fi
+
+    if [[ "${android_kernel}" == "true" ]] \
+        || [[ "${termux_version}" == "true" ]] \
+        || [[ "${termux_usr_dir}" == "true" ]] \
+        || [[ -d "/data/data/com.termux" ]]; then
+        android_host_markers="true"
+    fi
+
     # Apply platform override
     case "${BLUX10K_FORCE_PLATFORM:-}" in
         termux)
@@ -675,9 +724,42 @@ detect_platform() {
         log_info "Running in WSL ${WSL_VERSION}"
     fi
     
+    if [[ "${platform_forced}" != "true" ]]; then
+        if grep -qi "proot" /proc/self/status 2>/dev/null \
+            || grep -qa "proot" /proc/1/environ 2>/dev/null \
+            || env | grep -q '^PROOT_' \
+            || { command -v proot >/dev/null 2>&1 && [[ -n "${PROOT_TMP_DIR:-}" || -n "${PROOT_ROOTFS:-}" ]]; }; then
+            proot_signal="true"
+            proot_reasons+=("proot markers in /proc or environment variables")
+        fi
+
+        if [[ "${os_release_present}" == "true" ]] && [[ "${os_release_debian_like}" == "true" ]]; then
+            if [[ "${proot_signal}" == "true" ]]; then
+                IS_PROOT="true"
+                proot_reasons+=("Debian/Ubuntu userland with proot signal")
+            elif [[ "${android_host_markers}" == "true" ]]; then
+                IS_PROOT="true"
+                proot_reasons+=("Android host markers with Debian/Ubuntu userland")
+            fi
+        fi
+
+        if [[ -n "${IS_PROOT:-}" ]]; then
+            OS_TYPE="${ID:-debian}"
+            PACKAGE_MANAGER="apt"
+            log_info "Detected proot Debian/Ubuntu because: ${proot_reasons[*]}"
+        elif [[ "${termux_version}" == "true" || "${termux_usr_dir}" == "true" || "${termux_pkg_android}" == "true" ]]; then
+            IS_TERMUX="true"
+            OS_TYPE="termux"
+            PACKAGE_MANAGER="pkg"
+            log_info "Detected Termux legacy because: ${termux_reasons[*]}"
+        fi
+    fi
+
     if [[ "${platform_forced}" != "true" ]] \
         && [[ -f "/etc/os-release" ]] \
         && [[ "${ID:-}" != "android" ]] \
+        && [[ -z "${IS_TERMUX:-}" ]] \
+        && [[ -z "${IS_PROOT:-}" ]] \
         && command -v apt-get >/dev/null 2>&1; then
         if [[ "${OS_TYPE}" == "linux" ]]; then
             OS_TYPE="${ID:-debian}"
@@ -685,59 +767,6 @@ detect_platform() {
         PACKAGE_MANAGER="apt"
         apt_locked="true"
         log_info "Locked package manager to apt based on /etc/os-release"
-    fi
-
-    # Detect proot environments
-    local proot_signal="false"
-    if grep -qi "proot" /proc/self/status 2>/dev/null \
-        || grep -aq "proot" /proc/self/maps 2>/dev/null \
-        || grep -aq "proot" /proc/1/cmdline 2>/dev/null \
-        || env | grep -q '^PROOT_' \
-        || { command -v proot >/dev/null 2>&1 && [[ -n "${PROOT_TMP_DIR:-}" || -n "${PROOT_ROOTFS:-}" ]]; }; then
-        proot_signal="true"
-    fi
-
-    if [[ "${proot_signal}" == "true" ]]; then
-        IS_PROOT="true"
-        log_info "Detected proot environment"
-    fi
-
-    if [[ "${android_kernel}" == "true" ]] \
-        && [[ -f "/etc/os-release" ]] \
-        && [[ "${ID:-}" != "android" ]] \
-        && command -v apt-get >/dev/null 2>&1; then
-        if [[ -z "${IS_PROOT:-}" ]] \
-            && [[ -d "/data/data/com.termux" ]] \
-            && [[ "${ID:-}" == "debian" || "${ID:-}" == "ubuntu" ]]; then
-            IS_PROOT="true"
-            log_info "Detected proot environment (Termux host with Debian/Ubuntu userland)"
-        fi
-    fi
-
-    if [[ "${PREFIX:-}" == *"/data/data/com.termux/files/usr"* ]]; then
-        termux_prefix="true"
-    fi
-
-    if [[ -n "${TERMUX_VERSION:-}" ]]; then
-        termux_version="true"
-    fi
-
-    if [[ "${android_kernel}" == "true" ]]; then
-        termux_android="true"
-    fi
-    
-    if [[ -d "/data/data/com.termux" ]]; then
-        termux_data_dir="true"
-    fi
-
-    # Detect Termux (Android) - strict signals only
-    if [[ "${platform_forced}" != "true" ]] \
-        && [[ -z "${IS_PROOT:-}" ]] \
-        && [[ "${termux_prefix}" == "true" || "${termux_version}" == "true" ]]; then
-        IS_TERMUX="true"
-        OS_TYPE="termux"
-        PACKAGE_MANAGER="pkg"
-        log_info "Detected Termux (Android)"
     fi
 
     # Prefer apt in proot if available
@@ -781,7 +810,7 @@ detect_platform() {
         fi
     fi
 
-    log_debug "Platform summary: OS_TYPE=${OS_TYPE} PACKAGE_MANAGER=${PACKAGE_MANAGER} IS_PROOT=${IS_PROOT:-false} TERMUX_PREFIX=${termux_prefix} TERMUX_VERSION=${termux_version}"
+    log_debug "Platform summary: OS_TYPE=${OS_TYPE} PACKAGE_MANAGER=${PACKAGE_MANAGER} IS_PROOT=${IS_PROOT:-false} TERMUX_VERSION=${termux_version} TERMUX_USR_DIR=${termux_usr_dir} TERMUX_PKG_ANDROID=${termux_pkg_android} ANDROID_KERNEL=${android_kernel}"
     
     # Detect container environments
     if [[ -f "/.dockerenv" ]] || grep -q docker /proc/1/cgroup 2>/dev/null; then
@@ -894,10 +923,8 @@ install_zinit() {
     # Create zinit configuration directory
     mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/zinit"
     
-    # Load zinit in current shell for plugin installation
     if [[ -f "$zinit_home/zinit.zsh" ]]; then
-        source "$zinit_home/zinit.zsh"
-        log_success "Zinit loaded"
+        log_success "Zinit installed at ${zinit_home}"
     else
         log_error "Zinit installation failed"
         return 1
@@ -971,8 +998,11 @@ install_zsh_plugins_via_zinit() {
     # Create plugins.zsh file
     local plugins_file="${B10K_DIR}/modules/zsh/plugins.zsh"
     mkdir -p "$(dirname "$plugins_file")"
-    
-    cat > "$plugins_file" << EOF
+
+    local plugins_tmp
+    plugins_tmp="$(mktemp)"
+
+    cat > "$plugins_tmp" << EOF
 #!/usr/bin/env zsh
 # BLUX10K ZSH Plugins Configuration
 # Generated: $(date)
@@ -986,12 +1016,12 @@ fi
 EOF
     
     for plugin in "${plugins_to_install[@]}"; do
-        echo "zinit light \"$plugin\"" >> "$plugins_file"
+        echo "zinit light \"$plugin\"" >> "$plugins_tmp"
         log_info "Added plugin: $plugin"
     done
     
     # Add completion and compilation
-    cat >> "$plugins_file" << 'EOF'
+    cat >> "$plugins_tmp" << 'EOF'
 
 # Load completions
 autoload -Uz compinit
@@ -1022,7 +1052,8 @@ YSU_MESSAGE_POSITION="after"
 YSU_MODE=ALL
 YSU_HARDCORE=0
 EOF
-    
+
+    mv "$plugins_tmp" "$plugins_file"
     log_success "ZSH plugins configuration created"
     
     # Install plugins
@@ -1030,11 +1061,12 @@ EOF
     
     # Source zinit and load plugins
     if [[ -f "$plugins_file" ]]; then
-        source "$plugins_file"
-        
-        # Trigger plugin installation
-        zinit update --all --quiet --no-pager
-        log_success "Zinit plugins installed/updated"
+        if zsh -lc "source \"$plugins_file\"; zinit self-update; zinit update --all --quiet --no-pager"; then
+            log_success "Zinit plugins installed/updated"
+        else
+            log_error "Zinit plugin installation failed"
+            return 1
+        fi
     else
         log_error "Plugins configuration file not found"
         return 1
@@ -1044,12 +1076,11 @@ EOF
 update_zinit_plugins() {
     log_section "Updating Zinit Plugins"
     
-    if command -v zinit >/dev/null 2>&1; then
-        log_info "Updating all Zinit plugins..."
-        zinit update --all --parallel
+    log_info "Updating all Zinit plugins..."
+    if zsh -lc 'source ~/.zshrc; zinit self-update; zinit update --all --parallel'; then
         log_success "Zinit plugins updated"
     else
-        log_warn "Zinit not found, skipping plugin update"
+        log_warn "Zinit update skipped (zsh/zinit not available)"
     fi
 }
 
@@ -1059,9 +1090,11 @@ update_zinit_plugins() {
 
 install_prompt_system() {
     log_section "Prompt System Installation"
-    
+
+    SELECTED_PROMPT="$(normalize_prompt_choice "$SELECTED_PROMPT")"
+
     case "$SELECTED_PROMPT" in
-        powerlevel10k)
+        p10k|powerlevel10k)
             install_powerlevel10k
             configure_powerlevel10k
             ;;
@@ -1069,13 +1102,9 @@ install_prompt_system() {
             install_starship
             configure_starship
             ;;
-        none)
-            log_info "Skipping prompt system installation"
-            return 0
-            ;;
         *)
-            log_warn "Unknown prompt system: $SELECTED_PROMPT, defaulting to powerlevel10k"
-            SELECTED_PROMPT="powerlevel10k"
+            log_warn "Unknown prompt system: $SELECTED_PROMPT, defaulting to Powerlevel10k"
+            SELECTED_PROMPT="p10k"
             install_powerlevel10k
             configure_powerlevel10k
             ;;
@@ -1112,7 +1141,9 @@ configure_powerlevel10k() {
     local p10k_config="$HOME/.p10k.zsh"
     
     if [[ ! -f "$p10k_config" ]]; then
-        cat > "$p10k_config" << 'EOF'
+        local p10k_tmp
+        p10k_tmp="$(mktemp)"
+        cat > "$p10k_tmp" << 'EOF'
 # Generated by BLUX10K Installer
 # Powerlevel10k Configuration
 
@@ -1127,50 +1158,50 @@ source "${XDG_DATA_HOME:-$HOME/.local/share}/blux10k/p10k/powerlevel10k/powerlev
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 EOF
+        mv "$p10k_tmp" "$p10k_config"
         log_success "Powerlevel10k configuration created"
     else
         log_info "Powerlevel10k configuration already exists"
     fi
-    
-    # Add to blux10k entrypoint
-    echo "export BLUX10K_PROMPT_SYSTEM=\"powerlevel10k\"" >> "${B10K_DIR}/blux10k.zsh"
-    echo "source \"${P10K_DIR}/powerlevel10k.zsh-theme\"" >> "${B10K_DIR}/blux10k.zsh"
 }
 
 install_starship() {
     log_info "Installing Starship..."
     
-    # Install Starship
-    case "$OS_TYPE" in
-        linux|debian|ubuntu|arch|fedora|wsl)
-            if ! command -v starship >/dev/null 2>&1; then
-                log_info "Downloading and installing Starship..."
-                curl -sS https://starship.rs/install.sh | sh -s -- -y
-                log_success "Starship installed"
-            else
-                log_info "Starship already installed"
-            fi
-            ;;
-        macos)
-            if command -v brew >/dev/null 2>&1; then
+    if command -v starship >/dev/null 2>&1; then
+        log_info "Starship already installed"
+    else
+        case "$PACKAGE_MANAGER" in
+            apt)
+                if apt_get_install starship; then
+                    log_success "Starship installed via apt"
+                else
+                    log_warn "apt install failed, falling back to Starship install script"
+                    curl -sS https://starship.rs/install.sh | sh -s -- -y
+                fi
+                ;;
+            pkg)
+                if pkg install -y starship; then
+                    log_success "Starship installed via pkg"
+                else
+                    log_warn "pkg install failed, falling back to Starship install script"
+                    curl -sS https://starship.rs/install.sh | sh -s -- -y
+                fi
+                ;;
+            brew)
                 brew install starship
-            else
-                curl -sS https://starship.rs/install.sh | sh -s -- -y
-            fi
-            ;;
-        windows)
-            if command -v winget >/dev/null 2>&1; then
+                ;;
+            winget)
                 winget install --id Starship.Starship --silent
-            elif command -v choco >/dev/null 2>&1; then
+                ;;
+            chocolatey)
                 choco install starship -y
-            else
-                log_warn "Package manager not found for Starship installation on Windows"
-            fi
-            ;;
-        *)
-            curl -sS https://starship.rs/install.sh | sh -s -- -y
-            ;;
-    esac
+                ;;
+            *)
+                curl -sS https://starship.rs/install.sh | sh -s -- -y
+                ;;
+        esac
+    fi
     
     # Verify installation
     if command -v starship >/dev/null 2>&1; then
@@ -1188,7 +1219,9 @@ configure_starship() {
     local starship_config="${XDG_CONFIG_HOME:-$HOME/.config}/starship.toml"
     
     if [[ ! -f "$starship_config" ]]; then
-        cat > "$starship_config" << 'EOF'
+        local starship_tmp
+        starship_tmp="$(mktemp)"
+        cat > "$starship_tmp" << 'EOF'
 # BLUX10K Starship Configuration
 # https://starship.rs/config/
 
@@ -1334,14 +1367,38 @@ threshold = 75
 symbol = " "
 style = "bold dimmed white"
 EOF
+        mv "$starship_tmp" "$starship_config"
         log_success "Starship configuration created"
     else
         log_info "Starship configuration already exists"
     fi
-    
-    # Add to blux10k entrypoint
-    echo "export BLUX10K_PROMPT_SYSTEM=\"starship\"" >> "${B10K_DIR}/blux10k.zsh"
-    echo 'eval "$(starship init zsh)"' >> "${B10K_DIR}/blux10k.zsh"
+}
+
+verify_prompt_activation() {
+    log_section "Prompt Activation Verification"
+
+    local verify_cmd
+    verify_cmd=$(cat << 'EOF'
+echo "shell=$(ps -p $$ -o comm=)";
+echo "engine=$BLUX_PROMPT_ENGINE";
+if [ "$BLUX_PROMPT_ENGINE" = "p10k" ]; then
+  grep -q "powerlevel10k" ~/.zshrc && echo "P10K configured OK" || exit 1;
+  ! grep -q "starship init zsh" ~/.zshrc && echo "Starship not enabled OK" || exit 1;
+fi
+if [ "$BLUX_PROMPT_ENGINE" = "starship" ]; then
+  grep -q "starship init zsh" ~/.zshrc && echo "Starship configured OK" || exit 1;
+  ! grep -q "powerlevel10k" ~/.zshrc && echo "P10K not enabled OK" || exit 1;
+fi
+EOF
+)
+
+    if zsh -lc "$verify_cmd"; then
+        log_success "Prompt activation verified"
+    else
+        log_error "Prompt activation verification failed"
+        log_error "Hint: re-run the installer with --prompt=p10k or --prompt=starship"
+        return 1
+    fi
 }
 
 # ===========================================================================
@@ -1435,13 +1492,6 @@ for blux10k_arg in "$@"; do
     fi
 done
 
-if [[ -f "${BLUX10K_ROOT_DIR}/configs/.zshrc" ]]; then
-    # shellcheck source=configs/.zshrc
-    if [[ "${BLUX10K_PROFILE:-0}" -ne 1 ]]; then
-        source "${BLUX10K_ROOT_DIR}/configs/.zshrc"
-    fi
-fi
-
 main() {
     START_TIME=$(date +%s)
     
@@ -1465,7 +1515,7 @@ main() {
         fi
     else
         # Set defaults for silent mode
-        SELECTED_PROMPT="${BLUX10K_PROMPT:-powerlevel10k}"
+        SELECTED_PROMPT="$(normalize_prompt_choice "${BLUX10K_PROMPT:-p10k}")"
         PLUGIN_MODE="${BLUX10K_PLUGIN_MODE:-complete}"
         UPDATE_MODE="${BLUX10K_UPDATE_MODE:-full}"
     fi
@@ -1484,26 +1534,26 @@ main() {
     log_step "3" "Installing package manager..."
     install_package_manager
     
-    log_step "4" "Checking dependencies..."
+    log_step "4" "Installing environment dependencies..."
+    install_environment_dependencies
+    
+    log_step "5" "Checking dependencies..."
     check_dependencies || return 1
     
-    log_step "5" "Installing core packages..."
+    log_step "6" "Installing core packages..."
     install_core_packages
     
-    log_step "6" "Installing modern tools..."
+    log_step "7" "Installing modern tools..."
     install_modern_tools
     
-    log_step "7" "Installing Oh My Zsh..."
+    log_step "8" "Installing Oh My Zsh..."
     install_oh_my_zsh
     
-    log_step "8" "Installing Zinit..."
+    log_step "9" "Installing Zinit..."
     install_zinit
     
-    log_step "9" "Installing ZSH plugins..."
+    log_step "10" "Installing ZSH plugins..."
     install_zsh_plugins_via_zinit
-    
-    log_step "10" "Ensuring Powerlevel10k..."
-    install_powerlevel10k
     
     log_step "11" "Installing prompt system..."
     install_prompt_system
@@ -1513,14 +1563,17 @@ main() {
     
     log_step "13" "Deploying configurations..."
     deploy_configurations
+
+    log_step "14" "Verifying prompt activation..."
+    verify_prompt_activation
     
-    log_step "14" "Running updates..."
+    log_step "15" "Running updates..."
     run_updates
     
-    log_step "15" "Post-installation setup..."
+    log_step "16" "Post-installation setup..."
     post_install_setup
     
-    log_step "16" "Finalizing installation..."
+    log_step "17" "Finalizing installation..."
     finalize_installation
     
     return 0
@@ -1792,6 +1845,33 @@ install_dependency() {
         *)
             log_warn "Cannot install $dep: unsupported package manager"
             return 1
+            ;;
+    esac
+}
+
+# Install environment-specific dependencies
+install_environment_dependencies() {
+    log_section "Environment Dependencies"
+
+    case "${ENVIRONMENT}" in
+        termux)
+            log_info "Installing Termux dependencies via pkg..."
+            pkg update -y
+            pkg install -y zsh git curl wget python python-pip
+            log_success "Termux dependencies installed"
+            ;;
+        proot)
+            if [[ "${OS_TYPE}" == "debian" || "${OS_TYPE}" == "ubuntu" ]]; then
+                log_info "Installing Debian/Ubuntu dependencies via apt..."
+                apt_get_update
+                apt_get_install zsh git curl wget fzf locales ca-certificates
+                log_success "Debian/Ubuntu dependencies installed"
+            else
+                log_warn "Proot environment detected, but OS type is not Debian/Ubuntu; skipping dependency bundle"
+            fi
+            ;;
+        *)
+            log_debug "No environment-specific dependency bundle needed"
             ;;
     esac
 }
@@ -2379,8 +2459,10 @@ deploy_blux10k_config() {
     log_info "Deploying BLUX10K core configuration..."
     
     local blux10k_zsh="${B10K_DIR}/blux10k.zsh"
-    
-    cat > "$blux10k_zsh" << 'EOF'
+    local blux10k_tmp
+    blux10k_tmp="$(mktemp)"
+
+    cat > "$blux10k_tmp" << 'EOF'
 #!/usr/bin/env zsh
 # BLUX10K Main Configuration
 # Generated: $(date)
@@ -2541,11 +2623,74 @@ if [[ -o interactive ]]; then
     echo -e "BLUX10K v${BLUX10K_VERSION} loaded successfully! 🚀"
 fi
 EOF
-    
+
+    mv "$blux10k_tmp" "$blux10k_zsh"
     # Make it executable
     chmod +x "$blux10k_zsh"
     
     log_success "BLUX10K core configuration created"
+}
+
+# Render prompt block for .zshrc
+render_prompt_block() {
+    local prompt_engine="$1"
+
+    case "$prompt_engine" in
+        p10k|powerlevel10k)
+            cat << 'EOF'
+# BLUX10K Prompt Engine
+export BLUX_PROMPT_ENGINE="p10k"
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME="powerlevel10k/powerlevel10k"
+
+if [[ -f "$ZSH/oh-my-zsh.sh" ]]; then
+    source "$ZSH/oh-my-zsh.sh"
+fi
+
+# Powerlevel10k prompt
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+if [[ -f "${XDG_DATA_HOME:-$HOME/.local/share}/blux10k/p10k/powerlevel10k/powerlevel10k.zsh-theme" ]]; then
+  source "${XDG_DATA_HOME:-$HOME/.local/share}/blux10k/p10k/powerlevel10k/powerlevel10k.zsh-theme"
+fi
+
+if [[ -f "$HOME/.p10k.zsh" ]]; then
+  source "$HOME/.p10k.zsh"
+fi
+EOF
+            ;;
+        starship)
+            cat << 'EOF'
+# BLUX10K Prompt Engine
+export BLUX_PROMPT_ENGINE="starship"
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME=""
+
+if [[ -f "$ZSH/oh-my-zsh.sh" ]]; then
+    source "$ZSH/oh-my-zsh.sh"
+fi
+
+# Starship prompt
+if command -v starship >/dev/null 2>&1; then
+    eval "$(starship init zsh)"
+fi
+EOF
+            ;;
+        *)
+            cat << 'EOF'
+# BLUX10K Prompt Engine
+export BLUX_PROMPT_ENGINE="p10k"
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME="powerlevel10k/powerlevel10k"
+
+if [[ -f "$ZSH/oh-my-zsh.sh" ]]; then
+    source "$ZSH/oh-my-zsh.sh"
+fi
+EOF
+            ;;
+    esac
 }
 
 # Deploy shell-specific configurations
@@ -2561,18 +2706,44 @@ deploy_shell_configs() {
         cp "$zshrc_file" "$zshrc_backup"
         log_info "Backed up existing .zshrc to $zshrc_backup"
     fi
-    
+
+    local prompt_block
+    prompt_block="$(render_prompt_block "$SELECTED_PROMPT")"
+
     if [[ -f "${BLUX10K_ROOT_DIR}/configs/.zshrc" ]]; then
-        cp "${BLUX10K_ROOT_DIR}/configs/.zshrc" "$zshrc_file"
+        if ! grep -q "__BLUX_PROMPT_BLOCK__" "${BLUX10K_ROOT_DIR}/configs/.zshrc"; then
+            log_error "Prompt block placeholder missing in template"
+            return 1
+        fi
+        local zshrc_tmp
+        local prompt_block_file
+        zshrc_tmp="$(mktemp)"
+        prompt_block_file="$(mktemp)"
+        printf '%s\n' "$prompt_block" > "$prompt_block_file"
+        awk -v block_file="$prompt_block_file" '
+            $0 == "__BLUX_PROMPT_BLOCK__" {
+                while ((getline line < block_file) > 0) {
+                    print line
+                }
+                close(block_file)
+                next
+            }
+            { print }
+        ' "${BLUX10K_ROOT_DIR}/configs/.zshrc" > "$zshrc_tmp"
+        rm -f "$prompt_block_file"
+        mv "$zshrc_tmp" "$zshrc_file"
         log_success "Installed .zshrc from repository template"
-        return 0
-    fi
-    
-    # Create new .zshrc
-    cat > "$zshrc_file" << EOF
+    else
+        local zshrc_tmp
+        zshrc_tmp="$(mktemp)"
+        # Create new .zshrc
+        cat > "$zshrc_tmp" << EOF
 #!/usr/bin/env zsh
 # BLUX10K Enhanced ZSH Configuration
 # Generated: $(date)
+
+# BLUX10K prompt and OMZ setup
+${prompt_block}
 
 # Source BLUX10K main configuration
 if [[ -f "${B10K_DIR}/blux10k.zsh" ]]; then
@@ -2619,6 +2790,8 @@ if [[ -n "\${WSL_DISTRO_NAME:-}" ]] || grep -qi microsoft /proc/version 2>/dev/n
     fi
 fi
 EOF
+        mv "$zshrc_tmp" "$zshrc_file"
+    fi
     
     # Bash configuration (for systems where bash is primary shell)
     local bashrc_file="$HOME/.bashrc"
@@ -2669,7 +2842,7 @@ if ! shopt -oq posix; then
 fi
 
 # Starship prompt for bash (if installed)
-if command -v starship >/dev/null 2>&1 && [[ "$BLUX10K_PROMPT_SYSTEM" == "starship" ]]; then
+if command -v starship >/dev/null 2>&1 && [[ "$BLUX_PROMPT_ENGINE" == "starship" ]]; then
     eval "$(starship init bash)"
 fi
 EOF
@@ -2906,8 +3079,10 @@ create_update_script() {
     log_info "Creating update script..."
     
     local update_script="${B10K_DIR}/update.sh"
+    local update_tmp
+    update_tmp="$(mktemp)"
 
-    cat > "$update_script" << 'EOF'
+    cat > "$update_tmp" << 'EOF'
 #!/usr/bin/env bash
 # BLUX10K Update Script
 
@@ -2932,8 +3107,8 @@ fi
 
 # Update Zinit plugins
 echo "Updating Zinit plugins..."
-if command -v zinit >/dev/null 2>&1; then
-    zinit update --all --parallel
+if command -v zsh >/dev/null 2>&1; then
+    zsh -lc 'source ~/.zshrc; zinit self-update; zinit update --all --parallel'
 fi
 
 # Update Powerlevel10k
@@ -2980,6 +3155,7 @@ fi
 echo "=== BLUX10K Update Completed: $(date) ==="
 echo "Log file: $LOG_FILE"
 EOF
+    mv "$update_tmp" "$update_script"
     
     chmod +x "$update_script"
     log_success "Update script created: $update_script"
@@ -3160,7 +3336,7 @@ finalize_installation() {
     echo -e "${CYAN}Next Steps:${NC}"
     echo "  1. ${GREEN}Restart your terminal${NC} or run: ${WHITE}exec zsh${NC}"
     
-    if [[ "$SELECTED_PROMPT" == "powerlevel10k" ]]; then
+    if [[ "$SELECTED_PROMPT" == "p10k" || "$SELECTED_PROMPT" == "powerlevel10k" ]]; then
         echo "  2. ${GREEN}Configure Powerlevel10k${NC}: ${WHITE}p10k configure${NC}"
     elif [[ "$SELECTED_PROMPT" == "starship" ]]; then
         echo "  2. ${GREEN}Edit Starship config${NC}: ${WHITE}${XDG_CONFIG_HOME:-$HOME/.config}/starship.toml${NC}"
@@ -3255,7 +3431,7 @@ Options:
   -v, --verbose             Enable verbose output
   -s, --silent              Silent installation (non-interactive)
       --force-platform=PLATFORM Force specific platform (termux, debian, etc.)
-      --prompt=PROMPT       Set prompt system (powerlevel10k, starship, none)
+      --prompt=PROMPT       Set prompt system (p10k, powerlevel10k, starship)
       --plugin-mode=MODE    Set plugin mode (complete, essential, minimal, custom)
       --update-mode=MODE    Set update mode (full, plugins, none)
       --profile             Print detected environment and exit
