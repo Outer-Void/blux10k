@@ -27,6 +27,7 @@ readonly BLUX10K_LOG_DIR="${BLUX10K_CACHE_DIR}/logs"
 readonly BLUX10K_INSTALL_LOG="${BLUX10K_LOG_DIR}/install-$(date +%Y%m%d-%H%M%S).log"
 readonly B10K_DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/blux10k"
 readonly P10K_DIR="${B10K_DATA_DIR}/p10k/powerlevel10k"
+readonly OMZ_DIR="${ZDOTDIR:-$HOME}/.oh-my-zsh"
 readonly BLUX10K_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Color codes for output (ANSI 256-color support)
@@ -321,6 +322,9 @@ init_logging() {
 # Enhanced logging functions
 log_header() {
     local title="$1"
+    if [[ "${BLUX10K_PROFILE:-0}" -eq 1 ]]; then
+        return 0
+    fi
     echo -e "\n${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${BLUE}║${WHITE}                      $(printf "%-48s" "${title}")${BLUE}║${NC}"
     echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
@@ -328,31 +332,49 @@ log_header() {
 
 log_section() {
     local title="$1"
+    if [[ "${BLUX10K_PROFILE:-0}" -eq 1 ]]; then
+        return 0
+    fi
     echo -e "\n${CYAN}▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬ ${WHITE}${title}${CYAN} ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬${NC}"
 }
 
 log_info() {
+    if [[ "${BLUX10K_PROFILE:-0}" -eq 1 ]]; then
+        return 0
+    fi
     echo -e "${BLUE}${EMOJI_INFO}  ${NC}$1"
     echo "[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${BLUX10K_INSTALL_LOG}"
 }
 
 log_success() {
+    if [[ "${BLUX10K_PROFILE:-0}" -eq 1 ]]; then
+        return 0
+    fi
     echo -e "${GREEN}${EMOJI_SUCCESS}  ${NC}$1"
     echo "[SUCCESS] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${BLUX10K_INSTALL_LOG}"
 }
 
 log_warn() {
+    if [[ "${BLUX10K_PROFILE:-0}" -eq 1 ]]; then
+        return 0
+    fi
     echo -e "${YELLOW}${EMOJI_WARN}  ${NC}$1"
     echo "[WARN] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${BLUX10K_INSTALL_LOG}"
 }
 
 log_error() {
+    if [[ "${BLUX10K_PROFILE:-0}" -eq 1 ]]; then
+        return 0
+    fi
     echo -e "${RED}${EMOJI_ERROR}  ${NC}$1" >&2
     echo "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${BLUX10K_INSTALL_LOG}"
 }
 
 log_debug() {
     if [[ "${BLUX10K_DEBUG:-0}" -eq 1 ]]; then
+        if [[ "${BLUX10K_PROFILE:-0}" -eq 1 ]]; then
+            return 0
+        fi
         echo -e "${GRAY}${EMOJI_DEBUG}  ${NC}$1"
         echo "[DEBUG] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${BLUX10K_INSTALL_LOG}"
     fi
@@ -361,17 +383,75 @@ log_debug() {
 log_step() {
     local step_number="${1}"
     local step_title="${2}"
+    if [[ "${BLUX10K_PROFILE:-0}" -eq 1 ]]; then
+        return 0
+    fi
     echo -e "${MAGENTA}${EMOJI_STEP} Step ${step_number}: ${WHITE}${step_title}${NC}"
 }
 
 log_perf() {
     local message="$1"
     local duration="$2"
+    if [[ "${BLUX10K_PROFILE:-0}" -eq 1 ]]; then
+        return 0
+    fi
     echo -e "${CYAN}${EMOJI_CLOCK}  ${message}: ${WHITE}${duration}ms${NC}"
 }
 
 log_security() {
+    if [[ "${BLUX10K_PROFILE:-0}" -eq 1 ]]; then
+        return 0
+    fi
     echo -e "${PURPLE}${EMOJI_SHIELD}  ${NC}$1"
+}
+
+# ===================================================================
+# PACKAGE MANAGER HELPERS
+# ===================================================================
+
+get_sudo_prefix() {
+    if command -v sudo >/dev/null 2>&1 && [[ "${EUID}" -ne 0 ]]; then
+        echo "sudo"
+    fi
+}
+
+apt_get_update() {
+    local sudo_prefix
+    sudo_prefix=$(get_sudo_prefix)
+    if [[ -n "${sudo_prefix}" ]]; then
+        ${sudo_prefix} apt-get update "$@"
+    else
+        apt-get update "$@"
+    fi
+}
+
+apt_get_install() {
+    local sudo_prefix
+    sudo_prefix=$(get_sudo_prefix)
+    if [[ -n "${sudo_prefix}" ]]; then
+        ${sudo_prefix} apt-get install -y "$@"
+    else
+        apt-get install -y "$@"
+    fi
+}
+
+apt_get_upgrade() {
+    local sudo_prefix
+    sudo_prefix=$(get_sudo_prefix)
+    if [[ -n "${sudo_prefix}" ]]; then
+        ${sudo_prefix} apt-get upgrade -y "$@"
+    else
+        apt-get upgrade -y "$@"
+    fi
+}
+
+map_termux_package() {
+    local package_name="$1"
+    if [[ "${package_name}" == "python" ]]; then
+        echo "python3"
+        return
+    fi
+    echo "${package_name}"
 }
 
 # ===========================================================================
@@ -447,7 +527,15 @@ detect_platform() {
                 OS_VERSION="${VERSION_ID:-Unknown}"
                 
                 case "${ID:-}" in
-                    debian|ubuntu|linuxmint|pop|zorin|elementary|kali)
+                    debian)
+                        OS_TYPE="debian"
+                        PACKAGE_MANAGER="apt"
+                        ;;
+                    ubuntu)
+                        OS_TYPE="ubuntu"
+                        PACKAGE_MANAGER="apt"
+                        ;;
+                    linuxmint|pop|zorin|elementary|kali)
                         OS_TYPE="debian"
                         PACKAGE_MANAGER="apt"
                         ;;
@@ -560,7 +648,7 @@ detect_platform() {
         && [[ "${ID:-}" != "android" ]] \
         && command -v apt-get >/dev/null 2>&1; then
         if [[ "${OS_TYPE}" == "linux" ]]; then
-            OS_TYPE="debian"
+            OS_TYPE="${ID:-debian}"
         fi
         PACKAGE_MANAGER="apt"
         apt_locked="true"
@@ -588,9 +676,9 @@ detect_platform() {
         && command -v apt-get >/dev/null 2>&1; then
         if [[ -z "${IS_PROOT:-}" ]] \
             && [[ -d "/data/data/com.termux" ]] \
-            && [[ "${ID:-}" == "debian" ]]; then
+            && [[ "${ID:-}" == "debian" || "${ID:-}" == "ubuntu" ]]; then
             IS_PROOT="true"
-            log_info "Detected proot environment (Termux host with Debian userland)"
+            log_info "Detected proot environment (Termux host with Debian/Ubuntu userland)"
         fi
     fi
 
@@ -610,13 +698,10 @@ detect_platform() {
         termux_data_dir="true"
     fi
 
-    # Detect Termux (Android)
+    # Detect Termux (Android) - strict signals only
     if [[ "${platform_forced}" != "true" ]] \
-        && [[ "${apt_locked}" != "true" ]] \
         && [[ -z "${IS_PROOT:-}" ]] \
-        && [[ "${termux_prefix}" == "true" || "${termux_version}" == "true" ]] \
-        && command -v pkg >/dev/null 2>&1 \
-        && { [[ "${termux_android}" == "true" ]] || [[ "${termux_data_dir}" == "true" ]] || [[ ! -f "/etc/os-release" ]] || [[ "${ID:-}" == "android" ]] || [[ "${ID_LIKE:-}" == *"android"* ]]; }; then
+        && [[ "${termux_prefix}" == "true" || "${termux_version}" == "true" ]]; then
         IS_TERMUX="true"
         OS_TYPE="termux"
         PACKAGE_MANAGER="pkg"
@@ -626,12 +711,18 @@ detect_platform() {
     # Prefer apt in proot if available
     if [[ -n "${IS_PROOT:-}" ]] && command -v apt-get >/dev/null 2>&1 && [[ "${platform_forced}" != "true" ]]; then
         PACKAGE_MANAGER="apt"
+        if [[ "${OS_TYPE}" == "linux" ]]; then
+            OS_TYPE="${ID:-debian}"
+        fi
     fi
 
     # Ensure package manager is available; fallback between apt and pkg
     if [[ "${PACKAGE_MANAGER}" == "pkg" ]] && ! command -v pkg >/dev/null 2>&1; then
         if [[ "${platform_forced}" == "true" ]]; then
             log_error "pkg not found but BLUX10K_FORCE_PLATFORM is set"
+            return 1
+        elif [[ -n "${IS_TERMUX:-}" ]]; then
+            log_error "pkg not found in Termux environment. Please install Termux packages."
             return 1
         elif command -v apt-get >/dev/null 2>&1; then
             log_warn "pkg not found, falling back to apt"
@@ -724,6 +815,33 @@ detect_platform() {
 # ===========================================================================
 # ZINIT INSTALLATION & MANAGEMENT
 # ===========================================================================
+
+install_oh_my_zsh() {
+    log_section "Oh My Zsh Installation"
+    
+    if [[ -d "${OMZ_DIR}/.git" ]]; then
+        log_info "Oh My Zsh already installed, updating..."
+        if git -C "${OMZ_DIR}" pull --ff-only; then
+            log_success "Oh My Zsh updated"
+        else
+            log_warn "Oh My Zsh update failed; continuing"
+        fi
+        return 0
+    fi
+    
+    if [[ -d "${OMZ_DIR}" ]]; then
+        log_warn "Oh My Zsh directory exists without git metadata, skipping clone"
+        return 0
+    fi
+    
+    log_info "Cloning Oh My Zsh..."
+    if git clone --depth=1 https://github.com/ohmyzsh/ohmyzsh.git "${OMZ_DIR}"; then
+        log_success "Oh My Zsh installed"
+    else
+        log_error "Oh My Zsh installation failed"
+        return 1
+    fi
+}
 
 install_zinit() {
     log_section "Zinit Installation"
@@ -1224,7 +1342,7 @@ update_system_packages() {
     
     case "$PACKAGE_MANAGER" in
         apt)
-            sudo apt update && sudo apt upgrade -y
+            apt_get_update && apt_get_upgrade
             ;;
         brew)
             brew update && brew upgrade
@@ -1278,9 +1396,18 @@ update_custom_tools() {
 # MAIN INSTALLATION FLOW
 # ===========================================================================
 
+for blux10k_arg in "$@"; do
+    if [[ "${blux10k_arg}" == "--profile" ]]; then
+        BLUX10K_PROFILE=1
+        break
+    fi
+done
+
 if [[ -f "${BLUX10K_ROOT_DIR}/configs/.zshrc" ]]; then
     # shellcheck source=configs/.zshrc
-    source "${BLUX10K_ROOT_DIR}/configs/.zshrc"
+    if [[ "${BLUX10K_PROFILE:-0}" -ne 1 ]]; then
+        source "${BLUX10K_ROOT_DIR}/configs/.zshrc"
+    fi
 fi
 
 main() {
@@ -1288,6 +1415,16 @@ main() {
     
     # Parse command line arguments
     parse_arguments "$@"
+    
+    if [[ "${BLUX10K_PROFILE:-0}" -eq 1 ]]; then
+        detect_platform
+        echo "OS_TYPE=${OS_TYPE}"
+        echo "ENVIRONMENT=${ENVIRONMENT}"
+        echo "PACKAGE_MANAGER=${PACKAGE_MANAGER}"
+        echo "PREFIX=${PREFIX:-}"
+        echo "TERMUX_VERSION=${TERMUX_VERSION:-}"
+        safe_exit 0
+    fi
     
     # Show interactive menu if not in silent mode
     if [[ "${BLUX10K_SILENT_INSTALL:-0}" -ne 1 ]]; then
@@ -1324,28 +1461,34 @@ main() {
     log_step "6" "Installing modern tools..."
     install_modern_tools
     
-    log_step "7" "Installing Zinit..."
+    log_step "7" "Installing Oh My Zsh..."
+    install_oh_my_zsh
+    
+    log_step "8" "Installing Zinit..."
     install_zinit
     
-    log_step "8" "Installing ZSH plugins..."
+    log_step "9" "Installing ZSH plugins..."
     install_zsh_plugins_via_zinit
     
-    log_step "9" "Installing prompt system..."
+    log_step "10" "Ensuring Powerlevel10k..."
+    install_powerlevel10k
+    
+    log_step "11" "Installing prompt system..."
     install_prompt_system
     
-    log_step "10" "Installing fonts..."
+    log_step "12" "Installing fonts..."
     install_fonts
     
-    log_step "11" "Deploying configurations..."
+    log_step "13" "Deploying configurations..."
     deploy_configurations
     
-    log_step "12" "Running updates..."
+    log_step "14" "Running updates..."
     run_updates
     
-    log_step "13" "Post-installation setup..."
+    log_step "15" "Post-installation setup..."
     post_install_setup
     
-    log_step "14" "Finalizing installation..."
+    log_step "16" "Finalizing installation..."
     finalize_installation
     
     return 0
@@ -1422,7 +1565,7 @@ install_package_manager() {
                 return 1
             fi
             log_info "Updating APT cache..."
-            sudo apt update -qq
+            apt_get_update -qq
             ;;
             
         brew)
@@ -1585,7 +1728,7 @@ install_dependency() {
     
     case "$PACKAGE_MANAGER" in
         apt)
-            sudo apt install -y "$dep"
+            apt_get_install "$dep"
             ;;
         brew)
             brew install "$dep"
@@ -1597,7 +1740,7 @@ install_dependency() {
             sudo dnf install -y "$dep"
             ;;
         pkg)
-            pkg install -y "$dep"
+            pkg install -y "$(map_termux_package "$dep")"
             ;;
         winget)
             winget install --id "$dep" --silent
@@ -1691,7 +1834,7 @@ install_core_packages() {
                 "curl"
                 "git"
                 "nodejs"
-                "python"
+                "python3"
                 "rust"
                 "zsh"
             )
@@ -1708,7 +1851,7 @@ install_core_packages() {
         
         case "$PACKAGE_MANAGER" in
             apt)
-                sudo apt install -y "${packages[@]}"
+                apt_get_install "${packages[@]}"
                 ;;
             pacman)
                 sudo pacman -S --noconfirm "${packages[@]}"
@@ -1717,7 +1860,12 @@ install_core_packages() {
                 sudo dnf install -y "${packages[@]}"
                 ;;
             pkg)
-                pkg install -y "${packages[@]}"
+                local mapped_packages=()
+                local pkg_name
+                for pkg_name in "${packages[@]}"; do
+                    mapped_packages+=("$(map_termux_package "$pkg_name")")
+                done
+                pkg install -y "${mapped_packages[@]}"
                 ;;
             *)
                 log_warn "Core packages installation not implemented for $PACKAGE_MANAGER"
@@ -1872,7 +2020,7 @@ install_modern_tools() {
         
         case "$PACKAGE_MANAGER" in
             apt)
-                sudo apt install -y "${tools_to_install[@]}"
+                apt_get_install "${tools_to_install[@]}"
                 ;;
             brew)
                 brew install "${tools_to_install[@]}"
@@ -2084,6 +2232,9 @@ deploy_configurations() {
         log_debug "Created: $dir"
     done
     
+    # Deploy repository configuration templates
+    deploy_repo_configs
+    
     # Deploy main blux10k configuration
     deploy_blux10k_config
     
@@ -2097,6 +2248,42 @@ deploy_configurations() {
     deploy_theme_configs
     
     log_success "All configurations deployed"
+}
+
+# Deploy repo-provided config files
+deploy_repo_configs() {
+    log_info "Deploying repository configs..."
+    
+    local timestamp
+    timestamp="$(date +%Y%m%d-%H%M%S)"
+    
+    local source=""
+    local destination=""
+    local mappings=(
+        "${BLUX10K_ROOT_DIR}/configs/starship.toml|${XDG_CONFIG_HOME:-$HOME/.config}/starship.toml"
+        "${BLUX10K_ROOT_DIR}/configs/b10k.neofetch.conf|${XDG_CONFIG_HOME:-$HOME/.config}/neofetch/config.conf"
+    )
+    
+    for mapping in "${mappings[@]}"; do
+        source="${mapping%%|*}"
+        destination="${mapping##*|}"
+        
+        if [[ ! -f "${source}" ]]; then
+            log_debug "Config source missing, skipping: ${source}"
+            continue
+        fi
+        
+        mkdir -p "$(dirname "${destination}")"
+        
+        if [[ -f "${destination}" ]]; then
+            local backup_file="${destination}.bak.${timestamp}"
+            cp "${destination}" "${backup_file}"
+            log_info "Backed up ${destination} to ${backup_file}"
+        fi
+        
+        cp "${source}" "${destination}"
+        log_success "Installed config: ${destination}"
+    done
 }
 
 # Deploy main blux10k configuration
@@ -2279,12 +2466,18 @@ deploy_shell_configs() {
     
     # ZSH configuration
     local zshrc_file="$HOME/.zshrc"
-    local zshrc_backup="${zshrc_file}.backup.$(date +%Y%m%d_%H%M%S)"
+    local zshrc_backup="${zshrc_file}.bak.$(date +%Y%m%d-%H%M%S)"
     
     # Backup existing .zshrc
     if [[ -f "$zshrc_file" ]]; then
         cp "$zshrc_file" "$zshrc_backup"
         log_info "Backed up existing .zshrc to $zshrc_backup"
+    fi
+    
+    if [[ -f "${BLUX10K_ROOT_DIR}/configs/.zshrc" ]]; then
+        cp "${BLUX10K_ROOT_DIR}/configs/.zshrc" "$zshrc_file"
+        log_success "Installed .zshrc from repository template"
+        return 0
     fi
     
     # Create new .zshrc
@@ -2592,11 +2785,16 @@ post_install_setup() {
     
     # Set default shell to ZSH if available
     if command -v zsh >/dev/null 2>&1 && [[ "$SHELL" != "$(which zsh)" ]]; then
-        log_info "Setting ZSH as default shell..."
-        if chsh -s "$(which zsh)" 2>/dev/null; then
-            log_success "Default shell changed to ZSH"
+        if [[ "${ENVIRONMENT}" == "termux" || "${ENVIRONMENT}" == "proot" ]]; then
+            log_warn "Skipping automatic shell change in ${ENVIRONMENT}. Set manually if desired:"
+            log_info "Manual step: chsh -s $(which zsh)"
         else
-            log_warn "Could not change default shell. You may need to run: chsh -s $(which zsh)"
+            log_info "Setting ZSH as default shell..."
+            if chsh -s "$(which zsh)" 2>/dev/null; then
+                log_success "Default shell changed to ZSH"
+            else
+                log_warn "Could not change default shell. You may need to run: chsh -s $(which zsh)"
+            fi
         fi
     fi
     
@@ -2661,7 +2859,11 @@ echo "Updating system packages..."
 case "$(uname -s)" in
     Linux*)
         if command -v apt-get >/dev/null 2>&1; then
-            sudo apt update && sudo apt upgrade -y
+            if command -v sudo >/dev/null 2>&1 && [[ "$EUID" -ne 0 ]]; then
+                sudo apt-get update && sudo apt-get upgrade -y
+            else
+                apt-get update && apt-get upgrade -y
+            fi
         elif command -v pacman >/dev/null 2>&1; then
             sudo pacman -Syu --noconfirm
         elif command -v dnf >/dev/null 2>&1; then
@@ -2722,7 +2924,7 @@ BLUX10K_DATA="${XDG_DATA_HOME:-$HOME/.local/share}/blux10k"
 BLUX10K_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/blux10k"
 
 # Restore original .zshrc if backup exists
-ZSH_BACKUP_FILES=("$HOME/.zshrc.backup."*)
+ZSH_BACKUP_FILES=("$HOME/.zshrc.bak."*)
 if [[ ${#ZSH_BACKUP_FILES[@]} -gt 0 ]] && [[ -e "${ZSH_BACKUP_FILES[-1]}" ]]; then
     echo "Restoring original .zshrc..."
     cp "${ZSH_BACKUP_FILES[-1]}" "$HOME/.zshrc"
@@ -2937,6 +3139,10 @@ parse_arguments() {
                 BLUX10K_DEBUG=1
                 shift
                 ;;
+            --profile)
+                BLUX10K_PROFILE=1
+                shift
+                ;;
             --version)
                 echo "BLUX10K Installer v${BLUX10K_VERSION}"
                 safe_exit 0
@@ -2964,6 +3170,7 @@ Options:
       --prompt=PROMPT       Set prompt system (powerlevel10k, starship, none)
       --plugin-mode=MODE    Set plugin mode (complete, essential, minimal, custom)
       --update-mode=MODE    Set update mode (full, plugins, none)
+      --profile             Print detected environment and exit
       --debug               Enable debug mode
       --version             Show version information
 
