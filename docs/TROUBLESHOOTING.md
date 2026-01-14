@@ -26,9 +26,9 @@ If `chsh` fails (common in containers or Termux), start Zsh manually: `zsh`.
 
 ## Starship isn’t loading
 
-- Install Starship separately.
-- Copy `configs/starship.toml` to `~/.config/starship.toml`.
-- Set `BLUX10K_USE_STARSHIP=1` in `~/.config/private/env.zsh` and restart your shell.
+- Ensure Starship is installed (`starship --version`).
+- Re-run the installer with `--prompt=starship`.
+- Confirm `~/.zshrc` includes `eval "$(starship init zsh)"`, then restart your shell.
 
 ## Fonts installed but terminal doesn’t show them
 

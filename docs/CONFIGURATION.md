@@ -23,8 +23,7 @@ mkdir -p ~/.config
 cp ./configs/starship.toml ~/.config/starship.toml
 ```
 
-Then enable Starship in your shell and set `BLUX10K_USE_STARSHIP=1` before sourcing the BLUX10K
-entrypoint (for example, in `~/.config/private/env.zsh`).
+The installer manages prompt activation; re-run it with `--prompt=starship` to switch engines.
 
 ## Neofetch configuration (`configs/b10k.neofetch.conf`)
 

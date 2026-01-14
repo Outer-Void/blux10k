@@ -4,8 +4,7 @@
 # Usage:
 #   - Copy or symlink this file to: ~/.config/starship.toml
 #   - Enable Starship in your shell (e.g., `eval "$(starship init zsh)"`)
-#   - Set BLUX10K_USE_STARSHIP=1 before sourcing the BLUX10K entrypoint if you
-#     want the installer-managed entrypoint to prefer Starship.
+#   - Re-run the installer with --prompt=starship to make BLUX10K load Starship.
 
 # ===========================================================================
 # PERFORMANCE & SECURITY SETTINGS

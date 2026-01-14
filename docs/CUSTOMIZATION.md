@@ -19,11 +19,8 @@ your terminal.
 
 ## Prompt selection
 
-The installer defaults to Powerlevel10k if it can be installed. If you prefer Starship:
-
-1. Install Starship (outside of this repo).
-2. Copy `configs/starship.toml` to `~/.config/starship.toml`.
-3. Set `BLUX10K_USE_STARSHIP=1` in `~/.config/private/env.zsh`.
+Choose a prompt engine during installation (Powerlevel10k or Starship). To change it later,
+re-run the installer with `--prompt=p10k` or `--prompt=starship`.
 
 ## Environment variables
 
