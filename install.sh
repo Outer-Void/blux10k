@@ -1500,11 +1500,15 @@ main() {
     
     if [[ "${BLUX10K_PROFILE:-0}" -eq 1 ]]; then
         detect_platform
+        local neofetch_config
+        neofetch_config="${XDG_CONFIG_HOME:-$HOME/.config}/neofetch/config.conf"
         echo "OS_TYPE=${OS_TYPE}"
         echo "ENVIRONMENT=${ENVIRONMENT}"
         echo "PACKAGE_MANAGER=${PACKAGE_MANAGER}"
         echo "PREFIX=${PREFIX:-}"
         echo "TERMUX_VERSION=${TERMUX_VERSION:-}"
+        echo "NEOFETCH_INSTALLED=$(command -v neofetch >/dev/null 2>&1 && echo true || echo false)"
+        echo "NEOFETCH_CONFIG_PRESENT=$(test -f "$neofetch_config" && echo true || echo false)"
         safe_exit 0
     fi
     
@@ -1542,38 +1546,41 @@ main() {
     
     log_step "6" "Installing core packages..."
     install_core_packages
+
+    log_step "7" "Installing Neofetch..."
+    install_neofetch
     
-    log_step "7" "Installing modern tools..."
+    log_step "8" "Installing modern tools..."
     install_modern_tools
     
-    log_step "8" "Installing Oh My Zsh..."
+    log_step "9" "Installing Oh My Zsh..."
     install_oh_my_zsh
     
-    log_step "9" "Installing Zinit..."
+    log_step "10" "Installing Zinit..."
     install_zinit
     
-    log_step "10" "Installing ZSH plugins..."
+    log_step "11" "Installing ZSH plugins..."
     install_zsh_plugins_via_zinit
     
-    log_step "11" "Installing prompt system..."
+    log_step "12" "Installing prompt system..."
     install_prompt_system
     
-    log_step "12" "Installing fonts..."
+    log_step "13" "Installing fonts..."
     install_fonts
     
-    log_step "13" "Deploying configurations..."
+    log_step "14" "Deploying configurations..."
     deploy_configurations
 
-    log_step "14" "Verifying prompt activation..."
+    log_step "15" "Verifying prompt activation..."
     verify_prompt_activation
     
-    log_step "15" "Running updates..."
+    log_step "16" "Running updates..."
     run_updates
     
-    log_step "16" "Post-installation setup..."
+    log_step "17" "Post-installation setup..."
     post_install_setup
     
-    log_step "17" "Finalizing installation..."
+    log_step "18" "Finalizing installation..."
     finalize_installation
     
     return 0
@@ -1857,7 +1864,7 @@ install_environment_dependencies() {
         termux)
             log_info "Installing Termux dependencies via pkg..."
             pkg update -y
-            pkg install -y zsh git curl wget python python-pip
+            pkg install -y zsh git curl wget python3 python-pip
             log_success "Termux dependencies installed"
             ;;
         proot)
@@ -1898,6 +1905,7 @@ install_core_packages() {
                 "libffi-dev"
                 "liblzma-dev"
                 "python3-openssl"
+                "neofetch"
             )
             ;;
             
@@ -1914,6 +1922,7 @@ install_core_packages() {
                 "tk"
                 "libffi"
                 "lzma"
+                "neofetch"
             )
             ;;
             
@@ -1931,6 +1940,7 @@ install_core_packages() {
                 "tk-devel"
                 "libffi-devel"
                 "lzma-devel"
+                "neofetch"
             )
             ;;
             
@@ -1949,6 +1959,7 @@ install_core_packages() {
                 "python3"
                 "rust"
                 "zsh"
+                "neofetch"
             )
             ;;
             
@@ -1987,6 +1998,49 @@ install_core_packages() {
         log_success "Core packages installed"
     else
         log_info "No core packages required for this platform"
+    fi
+}
+
+# Install Neofetch
+install_neofetch() {
+    log_section "Neofetch Installation"
+
+    if command -v neofetch >/dev/null 2>&1; then
+        log_info "Neofetch already installed"
+        return 0
+    fi
+
+    case "$PACKAGE_MANAGER" in
+        apt)
+            apt_get_install neofetch
+            ;;
+        pacman)
+            sudo pacman -S --noconfirm neofetch
+            ;;
+        dnf)
+            sudo dnf install -y neofetch
+            ;;
+        pkg)
+            pkg install -y neofetch
+            ;;
+        brew)
+            if command -v brew >/dev/null 2>&1; then
+                brew install neofetch
+            else
+                log_warn "Homebrew not available. Please install neofetch manually."
+                return 0
+            fi
+            ;;
+        *)
+            log_warn "Neofetch installation not implemented for $PACKAGE_MANAGER"
+            return 0
+            ;;
+    esac
+
+    if command -v neofetch >/dev/null 2>&1; then
+        log_success "Neofetch installed"
+    else
+        log_warn "Neofetch installation may have failed"
     fi
 }
 
@@ -2419,11 +2473,38 @@ deploy_configurations() {
 }
 
 # Deploy repo-provided config files
-deploy_repo_configs() {
-    log_info "Deploying repository configs..."
-    
+deploy_config_file() {
+    local source="$1"
+    local destination="$2"
+    local mode="${3:-0644}"
     local timestamp
     timestamp="$(date +%Y%m%d-%H%M%S)"
+
+    if [[ ! -f "${source}" ]]; then
+        log_debug "Config source missing, skipping: ${source}"
+        return 0
+    fi
+
+    mkdir -p "$(dirname "${destination}")"
+
+    if [[ -f "${destination}" ]]; then
+        local backup_file="${destination}.bak.${timestamp}"
+        cp "${destination}" "${backup_file}"
+        log_info "Backed up ${destination} to ${backup_file}"
+    fi
+
+    if command -v install >/dev/null 2>&1; then
+        install -m "${mode}" "${source}" "${destination}"
+    else
+        cp "${source}" "${destination}"
+        chmod "${mode}" "${destination}"
+    fi
+
+    log_success "Installed config: ${destination}"
+}
+
+deploy_repo_configs() {
+    log_info "Deploying repository configs..."
     
     local source=""
     local destination=""
@@ -2435,22 +2516,7 @@ deploy_repo_configs() {
     for mapping in "${mappings[@]}"; do
         source="${mapping%%|*}"
         destination="${mapping##*|}"
-        
-        if [[ ! -f "${source}" ]]; then
-            log_debug "Config source missing, skipping: ${source}"
-            continue
-        fi
-        
-        mkdir -p "$(dirname "${destination}")"
-        
-        if [[ -f "${destination}" ]]; then
-            local backup_file="${destination}.bak.${timestamp}"
-            cp "${destination}" "${backup_file}"
-            log_info "Backed up ${destination} to ${backup_file}"
-        fi
-        
-        cp "${source}" "${destination}"
-        log_success "Installed config: ${destination}"
+        deploy_config_file "${source}" "${destination}" "0644"
     done
 }
 
@@ -2693,6 +2759,32 @@ EOF
     esac
 }
 
+ensure_neofetch_zshrc_block() {
+    local zshrc_file="$HOME/.zshrc"
+    local start_marker="# >>> BLUX10K NEOFETCH >>>"
+
+    if [[ ! -f "$zshrc_file" ]]; then
+        log_warn "Skipping Neofetch activation block; .zshrc not found"
+        return 0
+    fi
+
+    if grep -qF "$start_marker" "$zshrc_file"; then
+        log_info "Neofetch activation block already present in .zshrc"
+        return 0
+    fi
+
+    cat >> "$zshrc_file" << 'EOF'
+
+# >>> BLUX10K NEOFETCH >>>
+if command -v neofetch >/dev/null 2>&1; then
+  neofetch
+fi
+# <<< BLUX10K NEOFETCH <<<
+EOF
+
+    log_success "Added Neofetch activation block to .zshrc"
+}
+
 # Deploy shell-specific configurations
 deploy_shell_configs() {
     log_info "Deploying shell configurations..."
@@ -2848,6 +2940,8 @@ fi
 EOF
     fi
     
+    ensure_neofetch_zshrc_block
+
     log_success "Shell configurations deployed"
 }
 
