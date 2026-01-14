@@ -551,6 +551,9 @@ detect_platform() {
     local termux_version="false"
     local termux_usr_dir="false"
     local termux_pkg_android="false"
+    local termux_prefix="false"
+    local termux_native="false"
+    local termux_proot="false"
     local android_kernel="false"
     local os_release_present="false"
     local os_release_android="false"
@@ -677,6 +680,11 @@ detect_platform() {
         termux_reasons+=("TERMUX_VERSION is set")
     fi
 
+    if [[ -n "${PREFIX:-}" && "${PREFIX}" == /data/data/com.termux/files/usr* ]]; then
+        termux_prefix="true"
+        termux_reasons+=("PREFIX points to Termux userland")
+    fi
+
     if [[ -d "/data/data/com.termux/files/usr" ]]; then
         termux_usr_dir="true"
         termux_reasons+=("found /data/data/com.termux/files/usr")
@@ -691,6 +699,7 @@ detect_platform() {
 
     if [[ "${android_kernel}" == "true" ]] \
         || [[ "${termux_version}" == "true" ]] \
+        || [[ "${termux_prefix}" == "true" ]] \
         || [[ "${termux_usr_dir}" == "true" ]] \
         || [[ -d "/data/data/com.termux" ]]; then
         android_host_markers="true"
@@ -714,7 +723,7 @@ detect_platform() {
     esac
     
     # Detect WSL
-    if [[ "$OS_TYPE" == "linux" ]] && (grep -qi microsoft /proc/version 2>/dev/null || [[ -d "/mnt/c/Windows" ]]); then
+    if [[ "$(uname -s)" == "Linux" ]] && (grep -qi microsoft /proc/version 2>/dev/null || [[ -d "/mnt/c/Windows" ]]); then
         IS_WSL="true"
         if grep -qi "WSL2" /proc/version 2>/dev/null; then
             WSL_VERSION="2"
@@ -725,6 +734,17 @@ detect_platform() {
     fi
     
     if [[ "${platform_forced}" != "true" ]]; then
+        if [[ -f "/etc/os-release" ]] \
+            && command -v apt-get >/dev/null 2>&1 \
+            && [[ -d "/data/data/com.termux/files/usr" ]]; then
+            termux_proot="true"
+            proot_reasons+=("Termux proot detected with /etc/os-release and apt-get")
+        fi
+
+        if [[ "${termux_version}" == "true" ]] || [[ "${termux_prefix}" == "true" ]]; then
+            termux_native="true"
+        fi
+
         if grep -qi "proot" /proc/self/status 2>/dev/null \
             || grep -qa "proot" /proc/1/environ 2>/dev/null \
             || env | grep -q '^PROOT_' \
@@ -743,11 +763,18 @@ detect_platform() {
             fi
         fi
 
-        if [[ -n "${IS_PROOT:-}" ]]; then
+        if [[ "${termux_proot}" == "true" ]]; then
+            IS_PROOT="true"
+            OS_TYPE="${ID:-debian}"
+            PACKAGE_MANAGER="apt"
+            log_info "Detected Termux proot because: ${proot_reasons[*]}"
+        elif [[ -n "${IS_PROOT:-}" ]]; then
             OS_TYPE="${ID:-debian}"
             PACKAGE_MANAGER="apt"
             log_info "Detected proot Debian/Ubuntu because: ${proot_reasons[*]}"
-        elif [[ "${termux_version}" == "true" || "${termux_usr_dir}" == "true" || "${termux_pkg_android}" == "true" ]]; then
+        elif [[ "${termux_native}" == "true" ]] \
+            || [[ "${termux_usr_dir}" == "true" ]] \
+            || [[ "${termux_pkg_android}" == "true" ]]; then
             IS_TERMUX="true"
             OS_TYPE="termux"
             PACKAGE_MANAGER="pkg"
@@ -810,7 +837,19 @@ detect_platform() {
         fi
     fi
 
-    log_debug "Platform summary: OS_TYPE=${OS_TYPE} PACKAGE_MANAGER=${PACKAGE_MANAGER} IS_PROOT=${IS_PROOT:-false} TERMUX_VERSION=${termux_version} TERMUX_USR_DIR=${termux_usr_dir} TERMUX_PKG_ANDROID=${termux_pkg_android} ANDROID_KERNEL=${android_kernel}"
+    if [[ "${OS_TYPE}" == "linux" ]] && command -v pacman >/dev/null 2>&1; then
+        OS_TYPE="arch"
+        PACKAGE_MANAGER="pacman"
+        log_info "Detected Arch-based system via pacman"
+    fi
+
+    if [[ "${OS_TYPE}" == "linux" ]] && command -v dnf >/dev/null 2>&1; then
+        OS_TYPE="fedora"
+        PACKAGE_MANAGER="dnf"
+        log_info "Detected Fedora/RHEL system via dnf"
+    fi
+
+    log_debug "Platform summary: OS_TYPE=${OS_TYPE} PACKAGE_MANAGER=${PACKAGE_MANAGER} IS_PROOT=${IS_PROOT:-false} TERMUX_VERSION=${termux_version} TERMUX_PREFIX=${termux_prefix} TERMUX_USR_DIR=${termux_usr_dir} TERMUX_PKG_ANDROID=${termux_pkg_android} ANDROID_KERNEL=${android_kernel}"
     
     # Detect container environments
     if [[ -f "/.dockerenv" ]] || grep -q docker /proc/1/cgroup 2>/dev/null; then
@@ -1662,11 +1701,8 @@ install_package_manager() {
             
         brew)
             if ! command -v brew >/dev/null 2>&1; then
-                log_info "Installing Homebrew..."
-                /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-                if [[ "$OS_TYPE" == "linux" ]]; then
-                    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-                fi
+                log_warn "Homebrew not available; skipping brew setup"
+                return 0
             fi
             log_info "Updating Homebrew..."
             brew update
@@ -1678,7 +1714,7 @@ install_package_manager() {
                 return 1
             fi
             log_info "Updating pacman database..."
-            sudo pacman -Sy --noconfirm
+            sudo pacman -Syu --noconfirm
             ;;
             
         dnf)
@@ -1696,7 +1732,7 @@ install_package_manager() {
                 return 1
             fi
             log_info "Updating Termux packages..."
-            pkg update -y
+            pkg update
             ;;
             
         winget)
@@ -1823,10 +1859,15 @@ install_dependency() {
             apt_get_install "$dep"
             ;;
         brew)
-            brew install "$dep"
+            if command -v brew >/dev/null 2>&1; then
+                brew install "$dep"
+            else
+                log_warn "Homebrew not available; cannot install $dep"
+                return 1
+            fi
             ;;
         pacman)
-            sudo pacman -S --noconfirm "$dep"
+            sudo pacman -Syu --noconfirm "$dep"
             ;;
         dnf)
             sudo dnf install -y "$dep"
@@ -1863,7 +1904,7 @@ install_environment_dependencies() {
     case "${ENVIRONMENT}" in
         termux)
             log_info "Installing Termux dependencies via pkg..."
-            pkg update -y
+            pkg update
             pkg install -y zsh git curl wget python3 python-pip
             log_success "Termux dependencies installed"
             ;;
@@ -1977,7 +2018,7 @@ install_core_packages() {
                 apt_get_install "${packages[@]}"
                 ;;
             pacman)
-                sudo pacman -S --noconfirm "${packages[@]}"
+                sudo pacman -Syu --noconfirm "${packages[@]}"
                 ;;
             dnf)
                 sudo dnf install -y "${packages[@]}"
@@ -2012,15 +2053,17 @@ install_neofetch() {
 
     case "$PACKAGE_MANAGER" in
         apt)
+            apt_get_update
             apt_get_install neofetch
             ;;
         pacman)
-            sudo pacman -S --noconfirm neofetch
+            sudo pacman -Syu --noconfirm neofetch
             ;;
         dnf)
             sudo dnf install -y neofetch
             ;;
         pkg)
+            pkg update
             pkg install -y neofetch
             ;;
         brew)
@@ -2248,7 +2291,7 @@ install_modern_tools() {
                 brew install "${tools_to_install[@]}"
                 ;;
             pacman)
-                sudo pacman -S --noconfirm "${tools_to_install[@]}"
+                sudo pacman -Syu --noconfirm "${tools_to_install[@]}"
                 ;;
             dnf)
                 sudo dnf install -y "${tools_to_install[@]}"
@@ -2510,7 +2553,6 @@ deploy_repo_configs() {
     local destination=""
     local mappings=(
         "${BLUX10K_ROOT_DIR}/configs/starship.toml|${XDG_CONFIG_HOME:-$HOME/.config}/starship.toml"
-        "${BLUX10K_ROOT_DIR}/configs/b10k.neofetch.conf|${XDG_CONFIG_HOME:-$HOME/.config}/neofetch/config.conf"
     )
     
     for mapping in "${mappings[@]}"; do
@@ -2518,6 +2560,32 @@ deploy_repo_configs() {
         destination="${mapping##*|}"
         deploy_config_file "${source}" "${destination}" "0644"
     done
+
+    deploy_neofetch_config
+}
+
+deploy_neofetch_config() {
+    local source="${BLUX10K_ROOT_DIR}/configs/b10k.neofetch.conf"
+    local destination="${XDG_CONFIG_HOME:-$HOME/.config}/neofetch/config.conf"
+    local timestamp
+    timestamp="$(date +%Y%m%d-%H%M%S)"
+
+    if [[ ! -f "${source}" ]]; then
+        log_debug "Config source missing, skipping: ${source}"
+        return 0
+    fi
+
+    mkdir -p "$(dirname "${destination}")"
+
+    if [[ -f "${destination}" ]]; then
+        local backup_file="${destination}.bak.${timestamp}"
+        mv "${destination}" "${backup_file}"
+        log_info "Backed up ${destination} to ${backup_file}"
+    fi
+
+    cp "${source}" "${destination}"
+    chmod 0644 "${destination}"
+    log_success "Installed config: ${destination}"
 }
 
 # Deploy main blux10k configuration
@@ -2761,14 +2829,15 @@ EOF
 
 ensure_neofetch_zshrc_block() {
     local zshrc_file="$HOME/.zshrc"
-    local start_marker="# >>> BLUX10K NEOFETCH >>>"
+    local start_marker=">>> BLUX10K NEOFETCH >>>"
+    local end_marker="<<< BLUX10K NEOFETCH <<<"
 
     if [[ ! -f "$zshrc_file" ]]; then
         log_warn "Skipping Neofetch activation block; .zshrc not found"
         return 0
     fi
 
-    if grep -qF "$start_marker" "$zshrc_file"; then
+    if grep -qF "$start_marker" "$zshrc_file" || grep -qF "$end_marker" "$zshrc_file"; then
         log_info "Neofetch activation block already present in .zshrc"
         return 0
     fi
