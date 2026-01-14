@@ -53,6 +53,9 @@ See the docs for details:
 BLUX10K supports Linux, macOS, and Termux. Termux requires manual font application and may not be
 able to change the default shell. See [Platforms](docs/PLATFORMS.md).
 
+On Debian/Ubuntu, the installer uses `eza` (replacement for `exa`) and installs `bottom` as the
+`btm` package.
+
 ## License
 
 MIT License — see [LICENSE](./LICENSE).
