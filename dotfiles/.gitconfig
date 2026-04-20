@@ -14,8 +14,8 @@
 	clean = git-lfs clean -- %f
 	smudge = git-lfs smudge -- %f
 	process = git-lfs filter-process
-	required = true
+	required = false
 [credential]
-	helper = cache --timeout=3600
+	helper = store
 [include]
 	path = ~/.gitconfig.local

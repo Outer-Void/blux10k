@@ -76,7 +76,7 @@ Run from repository root:
 - `scripts/managed_entries.sh` — canonical managed-entry list (direct children of `dotfiles/`)
 - `scripts/backup_dotfiles.sh` — backup managed entries from `$HOME` into `~/.blux10k_backup/<timestamp>/`
 - `scripts/restore_dotfiles_backup.sh` — restore latest backup from `~/.blux10k_backup/`
-- `scripts/sync_dotfiles.sh` — sync managed entries from `$HOME` back into `dotfiles/`
+- `scripts/sync_dotfiles.sh` — sync managed entries from `$HOME` back into `dotfiles/` (supports `--dry-run`)
 - `scripts/list_dotfiles.sh` — list managed entries
 - `scripts/diff_dotfiles.sh` — compare managed entries in `dotfiles/` vs `$HOME`
 - `scripts/link.sh` — symlink managed entries into `$HOME`
@@ -85,7 +85,7 @@ Run from repository root:
 - `scripts/update_plugins.sh` — update zplug plugins and powerlevel10k (if installed)
 - `scripts/doctor.sh` — non-destructive environment/tooling report
 - `scripts/ensure_dirs.sh` — ensure `$HOME/tools`, `$HOME/tools/scripts`, and `$HOME/.config`
-- `scripts/safe_zip.sh` — create `blux10k_safe_YYYYMMDD.zip` excluding common sensitive/cache/git artifacts
+- `scripts/safe_zip.sh` — create `blux10k_safe_YYYYMMDD.zip` excluding common sensitive/cache/git artifacts (must be run from repository root, not from `$HOME`; does not exclude `~/.blux10k_backup`)
 - `scripts/activate_venv.sh` — source-only bash venv activator for `.venv`/`venv`
 - `scripts/py_venv.sh` — source-only POSIX helper to create/activate `.venv`
 - `scripts/reload_shell.sh` — source-only helper to reload current shell rc file
