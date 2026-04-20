@@ -49,14 +49,15 @@ Prompt and action order:
 2. Copy step (always runs):
    - Copies `dotfiles/.` into `$HOME/` using `cp -a`.
 3. `Run ./scripts/bootstrap-debian.sh? [y/N]: `
-4. `Set zsh as main shell? [y/N]: `
-5. `Run ./scripts/ensure_dirs.sh? [y/N]: `
-6. `Copy scripts/ dir to $HOME/tools/scripts? [y/N]: `
-7. `Run ./scripts/doctor.sh? [y/N]: `
-8. `Run ./scripts/list_dotfiles.sh? [y/N]: `
-9. `Run ./scripts/diff_dotfiles.sh? [y/N]: `
-10. `Run ./scripts/update_plugins.sh? [y/N]: `
-11. `Source ~/.zshrc now? [y/N]: `
+4. `Run p10k configure now? [y/N]: `
+5. `Set zsh as main shell? [y/N]: `
+6. `Run ./scripts/ensure_dirs.sh? [y/N]: `
+7. `Copy scripts/ dir to $HOME/tools/scripts? [y/N]: `
+8. `Run ./scripts/doctor.sh? [y/N]: `
+9. `Run ./scripts/list_dotfiles.sh? [y/N]: `
+10. `Run ./scripts/diff_dotfiles.sh? [y/N]: `
+11. `Run ./scripts/update_plugins.sh? [y/N]: `
+12. `Source ~/.zshrc now? [y/N]: `
 
 Notes:
 - `cp_dotfiles.sh` intentionally does **not** auto-run destructive/reversal utilities (`restore_dotfiles_backup.sh`, `sync_dotfiles.sh`, `unlink.sh`) and does not auto-run `reload_shell.sh`.
@@ -85,7 +86,8 @@ This is the symlink-based setup option. It links these managed targets (if sourc
 
 - `scripts/bootstrap-debian.sh`
   - Debian/Ubuntu bootstrap helper using `apt`.
-  - Installs terminal/dev packages and clones `~/.zplug` plus `~/powerlevel10k` when missing.
+  - Installs terminal/dev packages and clones `~/.zplug` plus upstream `~/powerlevel10k` when missing.
+  - Optionally runs `p10k configure` at the end.
 
 - `scripts/link.sh`
   - Symlink-based dotfiles installer from this repo into `$HOME`.
@@ -165,3 +167,8 @@ Current tracked entries in `dotfiles/`:
 
 - **Reload behavior**:
   - `scripts/reload_shell.sh` cannot change a parent shell when run as a normal subprocess; source it when you need the current shell session updated.
+
+- **Powerlevel10k loading**:
+  - `dotfiles/.zshrc` loads theme from `~/powerlevel10k/powerlevel10k.zsh-theme`.
+  - If present, `~/.p10k.zsh` is sourced for user-specific prompt configuration.
+  - Both `cp_dotfiles.sh` and `scripts/bootstrap-debian.sh` can optionally run `p10k configure`.
