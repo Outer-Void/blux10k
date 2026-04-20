@@ -1,4 +1,4 @@
-# --- OS and filesystem noise ---
+# OS / filesystem noise
 .DS_Store
 .DS_Store?
 Thumbs.db
@@ -7,31 +7,40 @@ $RECYCLE.BIN/
 .Trashes/
 ._*
 
-# --- Editor / IDE metadata ---
+# Editor / IDE metadata
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# --- Shell history / session artifacts ---
+# Shell history / session artifacts
 .bash_history
 .zsh_history
 .histfile
 
-# --- Environment and secrets (local-only) ---
+# Environment and local secrets
 .env
 .env.*
 *.local
 
-# --- Python virtualenvs and caches ---
+# Python virtualenvs and caches
 .venv/
 venv/
 __pycache__/
 .pytest_cache/
 *.py[cod]
 
-# --- Logs and runtime temp files ---
+# Logs and runtime temp files
 *.log
 *.pid
 *.tmp
+
+# blux10k local override files
+.zshrc.local
+.bashrc.local
+.profile.local
+.gitconfig.local
+
+# Archive artifacts
+blux10k_safe_*.zip

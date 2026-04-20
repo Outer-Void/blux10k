@@ -22,7 +22,7 @@ while IFS= read -r rel_path; do
   cp -a "$src_path" "$dst_path"
   echo "Restored: ${src_path} -> ${dst_path}"
   restored=1
-done < <(cd "$latest_backup" && find . -mindepth 1 -print | sed 's#^\./##' | sort)
+done < <(cd "$latest_backup" && find . -mindepth 1 -maxdepth 1 -print | sed 's#^./##' | sort)
 
 if [[ $restored -eq 0 ]]; then
   echo "Latest backup ${latest_backup} is empty; nothing to restore."
