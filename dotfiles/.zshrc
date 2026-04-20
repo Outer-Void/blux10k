@@ -20,6 +20,10 @@ case ":$PATH:" in
   *) export PATH="$LOCAL_TOOL_SCRIPTS:$PATH" ;;
 esac
 
+BLUX10K_VERSION="2.0.0"
+export BLUX10K_VERSION
+export BLUX10K_READY=1
+
 _run_tool_script() {
   local script_name="$1"
   shift
@@ -92,6 +96,9 @@ Helpers (scripts are expected in $HOME/tools/scripts):
   unlink_dotfiles         -> unlink.sh                  Remove blux10k-managed symlinks
   update_plugins          -> update_plugins.sh          Update zplug and powerlevel10k
 EOF_HELP
+      ;;
+    version|--version|-v)
+      printf 'blux10k %s\n' "${BLUX10K_VERSION:-unknown}"
       ;;
     *)
       echo "Usage: b10k --help"
