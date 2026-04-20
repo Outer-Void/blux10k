@@ -15,6 +15,9 @@ if [[ -z "$latest_backup" ]]; then
 fi
 
 restored=0
+# Restore iterates the backup directory directly (not managed_entries.sh).
+# This is intentional: a full restore brings back everything that was backed up,
+# including entries that may have since been removed from managed scope.
 while IFS= read -r rel_path; do
   src_path="${latest_backup}/${rel_path}"
   dst_path="${HOME}/${rel_path}"

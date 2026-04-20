@@ -33,9 +33,27 @@ echo "Installing Debian/Ubuntu bootstrap packages..."
 "${apt_runner[@]}" apt update
 "${apt_runner[@]}" apt install -y \
   git curl wget zsh tmux vim nano neovim \
-  fastfetch htop tree unzip zip ripgrep fd-find \
+  htop tree unzip zip ripgrep fd-find \
   bat fzf jq ranger xclip build-essential
 
+
+if command -v batcat >/dev/null 2>&1 && ! command -v bat >/dev/null 2>&1; then
+  mkdir -p "$HOME/.local/bin"
+  ln -sf "$(command -v batcat)" "$HOME/.local/bin/bat"
+  echo "Aliased batcat -> $HOME/.local/bin/bat"
+fi
+
+if command -v fdfind >/dev/null 2>&1 && ! command -v fd >/dev/null 2>&1; then
+  mkdir -p "$HOME/.local/bin"
+  ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
+  echo "Aliased fdfind -> $HOME/.local/bin/fd"
+fi
+
+if apt-cache show fastfetch >/dev/null 2>&1; then
+  "${apt_runner[@]}" apt install -y fastfetch
+else
+  echo "fastfetch not available in this repo; skipping."
+fi
 if [[ ! -d "$HOME/.zplug" ]]; then
   git clone https://github.com/zplug/zplug "$HOME/.zplug"
 fi

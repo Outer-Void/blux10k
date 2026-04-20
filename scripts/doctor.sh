@@ -40,7 +40,28 @@ else
   printf '[missing] %-14s -\n' 'pip/pip3'
 fi
 
-check_path '~/.zplug' "$HOME/.zplug"
-check_path '~/powerlevel10k' "$HOME/powerlevel10k"
-check_path '~/.zshrc' "$HOME/.zshrc"
-check_path '~/.p10k.zsh' "$HOME/.p10k.zsh"
+check_path 'home/.zplug' "$HOME/.zplug"
+check_path 'home/powerlevel10k' "$HOME/powerlevel10k"
+check_path 'home/.zshrc' "$HOME/.zshrc"
+check_path 'home/.p10k.zsh' "$HOME/.p10k.zsh"
+
+# Check LOCAL_TOOL_SCRIPTS path
+tool_scripts_path="${LOCAL_TOOL_SCRIPTS:-$HOME/tools/scripts}"
+check_path 'tools/scripts' "$tool_scripts_path"
+
+# Check each helper script is installed
+for helper_script in \
+  py_venv.sh activate_venv.sh backup_dotfiles.sh bootstrap-debian.sh \
+  diff_dotfiles.sh doctor.sh ensure_dirs.sh link.sh list_dotfiles.sh \
+  managed_entries.sh reload_shell.sh restore_dotfiles_backup.sh \
+  safe_zip.sh sync_dotfiles.sh unlink.sh update_plugins.sh; do
+  check_path "$helper_script" "$tool_scripts_path/$helper_script"
+done
+
+# Check p10k command
+check_cmd p10k
+
+# Check actual Debian binary names
+check_cmd batcat
+check_cmd fdfind
+check_cmd fastfetch

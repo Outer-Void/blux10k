@@ -117,7 +117,8 @@ if [[ -f "$ZPLUG_HOME/init.zsh" ]]; then
   zplug "zsh-users/zsh-completions"
   zplug "Aloxaf/fzf-tab"
 
-  if ! zplug check --verbose; then
+  if ! zplug check 2>/dev/null; then
+    printf 'blux10k: zplug plugins missing, installing...\n'
     zplug install
   fi
   zplug load
@@ -125,7 +126,11 @@ fi
 
 # Completion.
 autoload -Uz compinit
-compinit
+if [[ -f ~/.zcompdump && $(date +%j) == $(date -r ~/.zcompdump +%j 2>/dev/null) ]]; then
+  compinit -C -d ~/.zcompdump
+else
+  compinit -d ~/.zcompdump
+fi
 
 # Powerlevel10k theme and prompt config.
 if [[ -f "$HOME/powerlevel10k/powerlevel10k.zsh-theme" ]]; then

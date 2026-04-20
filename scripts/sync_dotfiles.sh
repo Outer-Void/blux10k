@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+dry_run=0
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) dry_run=1 ;;
+    *) echo "Unknown argument: $arg"; exit 1 ;;
+  esac
+done
+
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 dotfiles_dir="${repo_root}/dotfiles"
 managed_entries_script="${repo_root}/scripts/managed_entries.sh"
@@ -21,13 +29,17 @@ while IFS= read -r rel_path; do
   repo_path="${dotfiles_dir}/${rel_path}"
 
   if [[ -e "$home_path" || -L "$home_path" ]]; then
-    if [[ -e "$repo_path" || -L "$repo_path" ]]; then
-      echo "Replacing managed entry: ${repo_path}"
-      rm -rf "$repo_path"
+    if [[ $dry_run -eq 1 ]]; then
+      echo "[dry-run] Would sync: ${home_path} -> ${repo_path}"
+    else
+      if [[ -e "$repo_path" || -L "$repo_path" ]]; then
+        echo "Replacing managed entry: ${repo_path}"
+        rm -rf "$repo_path"
+      fi
+      mkdir -p "$(dirname "$repo_path")"
+      cp -a "$home_path" "$repo_path"
+      echo "Synced: ${home_path} -> ${repo_path}"
     fi
-    mkdir -p "$(dirname "$repo_path")"
-    cp -a "$home_path" "$repo_path"
-    echo "Synced: ${home_path} -> ${repo_path}"
     synced=1
   fi
 done < <("$managed_entries_script")
