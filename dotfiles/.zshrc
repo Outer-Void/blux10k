@@ -26,7 +26,9 @@ _run_tool_script() {
   local script_path="$LOCAL_TOOL_SCRIPTS/$script_name"
 
   if [[ ! -f "$script_path" ]]; then
-    echo "blux10k helper error: missing script $script_path"
+    echo "blux10k helper error: missing script: $script_name" >&2
+    echo "  expected at: $script_path" >&2
+    echo "  fix: copy scripts with ./cp_dotfiles.sh (Copy scripts prompt) or to \$HOME/tools/scripts." >&2
     return 1
   fi
 
@@ -39,7 +41,9 @@ _source_tool_script() {
   local script_path="$LOCAL_TOOL_SCRIPTS/$script_name"
 
   if [[ ! -f "$script_path" ]]; then
-    echo "blux10k helper error: missing script $script_path"
+    echo "blux10k helper error: missing script: $script_name" >&2
+    echo "  expected at: $script_path" >&2
+    echo "  fix: copy scripts with ./cp_dotfiles.sh (Copy scripts prompt) or to \$HOME/tools/scripts." >&2
     return 1
   fi
 
@@ -69,7 +73,7 @@ b10k() {
 blux10k helper menu
 
 Usage:
-  b10k --help
+  b10k [-h|--help]
 
 Helpers (scripts are expected in $HOME/tools/scripts):
   pv                      -> py_venv.sh                 Create/activate .venv in current dir (source)

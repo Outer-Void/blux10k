@@ -18,14 +18,20 @@ if ! command -v apt >/dev/null 2>&1; then
   echo "apt not found. This script requires Debian/Ubuntu package management."
   exit 1
 fi
-if ! command -v sudo >/dev/null 2>&1; then
-  echo "sudo not found. Install sudo or run package commands manually."
+
+apt_runner=()
+if [[ "$(id -u)" -eq 0 ]]; then
+  apt_runner=()
+elif command -v sudo >/dev/null 2>&1; then
+  apt_runner=(sudo)
+else
+  echo "sudo not found and current user is not root. Install sudo or run as root."
   exit 1
 fi
 
 echo "Installing Debian/Ubuntu bootstrap packages..."
-sudo apt update
-sudo apt install -y \
+"${apt_runner[@]}" apt update
+"${apt_runner[@]}" apt install -y \
   git curl wget zsh tmux vim nano neovim \
   fastfetch htop tree unzip zip ripgrep fd-find \
   bat fzf jq ranger xclip build-essential

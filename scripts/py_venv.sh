@@ -7,6 +7,8 @@ VENV_DIR=".venv"
 _is_sourced() {
   if [ -n "${ZSH_VERSION-}" ]; then
     case ${ZSH_EVAL_CONTEXT-} in *:file:*) return 0;; esac
+  elif [ -n "${BASH_VERSION-}" ]; then
+    [ "${BASH_SOURCE[0]}" != "$0" ] && return 0 || return 1
   else
     (return 0 2>/dev/null) && return 0 || return 1
   fi
@@ -19,7 +21,7 @@ Correct usage:
   . ./py_venv.sh
   source ./py_venv.sh
 EOF
-  exec true
+  exit 1
 fi
 
 # Require python3 to exist

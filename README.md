@@ -113,6 +113,8 @@ b10k --help
 
 to show the helper menu.
 
+If a helper script is missing, wrappers show the missing script name, expected path, and a fix hint to copy `scripts/` into `$HOME/tools/scripts`.
+
 Helper names:
 
 - `pv`, `av`
@@ -143,10 +145,12 @@ This repository does not ship a custom Powerlevel10k theme framework.
 - **Managed scope**: maintenance scripts operate on managed entries defined by `scripts/managed_entries.sh`.
 - **Backup/restore**: backups are written under `~/.blux10k_backup/` and restored from the latest timestamp directory.
 - **Debian assumption**: `scripts/bootstrap-debian.sh` is explicitly for Debian/Ubuntu systems.
+  - Package installation runs as root directly, or via `sudo` for non-root users.
 - **Source vs execute**:
   - source `scripts/activate_venv.sh`
   - source `scripts/py_venv.sh`
   - source `scripts/reload_shell.sh`
+  - `reload_shell.sh` must be sourced; executing it cannot reload a parent shell.
 - **Local overrides**: use untracked `.zshrc.local`, `.bashrc.local`, `.profile.local`, and `.gitconfig.local` for machine-specific settings.
 
 ## Version

@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  echo "This helper must be sourced to affect your current shell session."
-  echo "Usage: source ./scripts/reload_shell.sh"
+  echo "[reload-shell] ERROR: this helper must be sourced; it cannot reload a parent shell." >&2
+  echo "[reload-shell] Usage: source ./scripts/reload_shell.sh" >&2
   exit 1
 fi
 
@@ -12,16 +11,16 @@ if [[ -n "${ZSH_VERSION:-}" ]]; then
 elif [[ -n "${BASH_VERSION:-}" ]]; then
   rc_file="$HOME/.bashrc"
 else
-  echo "Could not determine current shell; no rc file reloaded."
+  echo "[reload-shell] ERROR: unsupported shell; expected bash or zsh." >&2
   return 1
 fi
 
 if [[ ! -f "$rc_file" ]]; then
-  echo "${rc_file} does not exist; nothing to reload."
+  echo "[reload-shell] INFO: ${rc_file} does not exist; nothing to reload."
   return 0
 fi
 
-echo "Reloading ${rc_file} ..."
+echo "[reload-shell] Reloading ${rc_file} ..."
 # shellcheck source=/dev/null
 . "$rc_file"
-echo "Reload complete."
+echo "[reload-shell] Reload complete."

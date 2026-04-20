@@ -21,7 +21,10 @@ while IFS= read -r rel_path; do
   repo_path="${dotfiles_dir}/${rel_path}"
 
   if [[ -e "$home_path" || -L "$home_path" ]]; then
-    rm -rf "$repo_path"
+    if [[ -e "$repo_path" || -L "$repo_path" ]]; then
+      echo "Replacing managed entry: ${repo_path}"
+      rm -rf "$repo_path"
+    fi
     mkdir -p "$(dirname "$repo_path")"
     cp -a "$home_path" "$repo_path"
     echo "Synced: ${home_path} -> ${repo_path}"
