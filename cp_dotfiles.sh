@@ -55,16 +55,19 @@ if [[ "$run_p10k_configure" =~ ^[Yy]$ ]]; then
     p10k configure || echo "p10k configure did not complete successfully; continuing."
   elif command -v zsh >/dev/null 2>&1 && [[ -f "$HOME/powerlevel10k/powerlevel10k.zsh-theme" ]]; then
     echo "Running p10k configure via zsh."
+    # zsh -i spawns an interactive child that takes full terminal ownership.
+    # In proot/Termux environments the TTY is not cleanly returned to the
+    # parent bash process on exit — both stdin and stdout can be left
+    # detached, causing "suspended (tty input/output)" on the next read.
+    # We re-attach both file descriptors to /dev/tty immediately after.
     zsh -i -c 'source "$HOME/powerlevel10k/powerlevel10k.zsh-theme" && p10k configure' \
       || echo "p10k configure via zsh did not complete successfully; continuing."
+    stty sane          2>/dev/null || true
+    exec  </dev/tty    2>/dev/null || true
+    exec 1>/dev/tty    2>/dev/null || true
   else
     echo "Powerlevel10k is not available yet; skipping p10k configure."
   fi
-  # p10k configure runs a full-screen interactive TUI that takes TTY ownership.
-  # After it exits, the parent shell's TTY may be left in a broken state.
-  # stty sane restores terminal settings; exec </dev/tty re-attaches stdin.
-  stty sane 2>/dev/null || true
-  exec </dev/tty 2>/dev/null || true
 else
   echo "Skipped p10k configure."
 fi
