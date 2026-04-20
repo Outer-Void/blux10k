@@ -60,6 +60,11 @@ if [[ "$run_p10k_configure" =~ ^[Yy]$ ]]; then
   else
     echo "Powerlevel10k is not available yet; skipping p10k configure."
   fi
+  # p10k configure runs a full-screen interactive TUI that takes TTY ownership.
+  # After it exits, the parent shell's TTY may be left in a broken state.
+  # stty sane restores terminal settings; exec </dev/tty re-attaches stdin.
+  stty sane 2>/dev/null || true
+  exec </dev/tty 2>/dev/null || true
 else
   echo "Skipped p10k configure."
 fi
