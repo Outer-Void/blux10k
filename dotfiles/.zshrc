@@ -11,19 +11,19 @@ fi
 unalias ac pv av lda 2>/dev/null
 unset -f ac pv av lda 2>/dev/null
 
-# ----- JADIS -----
-JADIS_SCRIPTS="$HOME/jadis/tools/scripts"
+# ----- LOCAL TOOL SCRIPTS -----
+LOCAL_TOOL_SCRIPTS="${LOCAL_TOOL_SCRIPTS:-$HOME/tools/scripts}"
 case ":$PATH:" in
-  *":$JADIS_SCRIPTS:"*) ;;
-  *) export PATH="$JADIS_SCRIPTS:$PATH" ;;
+  *":$LOCAL_TOOL_SCRIPTS:"*) ;;
+  *) export PATH="$LOCAL_TOOL_SCRIPTS:$PATH" ;;
 esac
 
 pv() {
-  source "$JADIS_SCRIPTS/py_venv.sh"
+  source "$LOCAL_TOOL_SCRIPTS/py_venv.sh"
 }
 
 av() {
-  source "$JADIS_SCRIPTS/activate_venv.sh"
+  source "$LOCAL_TOOL_SCRIPTS/activate_venv.sh"
 }
 
 lda() {

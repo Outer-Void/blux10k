@@ -27,13 +27,30 @@ if [[ "$run_bootstrap" == "y" || "$run_bootstrap" == "Y" ]]; then
   bootstrap_script="${repo_root}/scripts/bootstrap-debian.sh"
   if [[ -f "$bootstrap_script" ]]; then
     echo "Running ./scripts/bootstrap-debian.sh from ${repo_root}."
-    (cd "$repo_root" && ./scripts/bootstrap-debian.sh)
+    (cd "$repo_root" && BLUX10K_SKIP_P10K_CONFIG_PROMPT=1 ./scripts/bootstrap-debian.sh)
     echo "Finished running ./scripts/bootstrap-debian.sh."
   else
     echo "bootstrap-debian.sh not found at ${bootstrap_script}; skipping."
   fi
 else
   echo "Skipped running ./scripts/bootstrap-debian.sh."
+fi
+
+
+read -r -p 'Run p10k configure now? [y/N]: ' run_p10k_configure
+if [[ "$run_p10k_configure" == "y" || "$run_p10k_configure" == "Y" ]]; then
+  if command -v p10k >/dev/null 2>&1; then
+    echo "Running p10k configure."
+    p10k configure || echo "p10k configure did not complete successfully; continuing."
+  elif command -v zsh >/dev/null 2>&1 && [[ -f "$HOME/powerlevel10k/powerlevel10k.zsh-theme" ]]; then
+    echo "Running p10k configure via zsh."
+    zsh -i -c 'source ~/powerlevel10k/powerlevel10k.zsh-theme && p10k configure' \
+      || echo "p10k configure via zsh did not complete successfully; continuing."
+  else
+    echo "Powerlevel10k is not available yet; skipping p10k configure."
+  fi
+else
+  echo "Skipped p10k configure."
 fi
 
 read -r -p 'Set zsh as main shell? [y/N]: ' set_main_shell
