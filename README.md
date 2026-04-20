@@ -139,6 +139,37 @@ This is the symlink-based setup option. It links these managed targets (if sourc
     - `~/powerlevel10k` (runs `git pull --ff-only` if it is a git repo)
   - Missing optional components are reported and skipped.
 
+## Shell helper functions (`dotfiles/.zshrc`)
+
+`dotfiles/.zshrc` exposes helper functions that run installed scripts from `$HOME/tools/scripts` (via `LOCAL_TOOL_SCRIPTS`).
+
+Use:
+
+```bash
+b10k -h
+b10k --help
+```
+
+to print the helper menu.
+
+Helper functions:
+
+- `pv` → `py_venv.sh` (source)
+- `av` → `activate_venv.sh` (source)
+- `backup_dotfiles` → `backup_dotfiles.sh`
+- `bootstrap_debian` → `bootstrap-debian.sh`
+- `diff_dotfiles` → `diff_dotfiles.sh`
+- `doctor` → `doctor.sh`
+- `ensure_dirs` → `ensure_dirs.sh`
+- `link_dotfiles` → `link.sh`
+- `list_dotfiles` → `list_dotfiles.sh`
+- `reload_shell` → `reload_shell.sh` (source)
+- `restore_dotfiles_backup` → `restore_dotfiles_backup.sh`
+- `safe_zip` → `safe_zip.sh`
+- `sync_dotfiles` → `sync_dotfiles.sh`
+- `unlink_dotfiles` → `unlink.sh`
+- `update_plugins` → `update_plugins.sh`
+
 ## Dotfiles reference
 
 Current tracked entries in `dotfiles/`:
