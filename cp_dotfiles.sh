@@ -4,6 +4,20 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 dotfiles_src="${repo_root}/dotfiles"
 
+read -r -p 'Back up existing managed dotfiles before copy? [y/N]: ' run_backup
+if [[ "$run_backup" == "y" || "$run_backup" == "Y" ]]; then
+  backup_script="${repo_root}/scripts/backup_dotfiles.sh"
+  if [[ -f "$backup_script" ]]; then
+    echo "Running ./scripts/backup_dotfiles.sh from ${repo_root}."
+    (cd "$repo_root" && ./scripts/backup_dotfiles.sh)
+    echo "Finished running ./scripts/backup_dotfiles.sh."
+  else
+    echo "backup_dotfiles.sh not found at ${backup_script}; skipping backup."
+  fi
+else
+  echo "Skipped backup before copy."
+fi
+
 mkdir -p "$HOME"
 cp -a "${dotfiles_src}/." "$HOME/"
 echo "Copied dotfiles from ${dotfiles_src} to $HOME."
@@ -46,6 +60,20 @@ else
   echo "Skipped setting zsh as main shell."
 fi
 
+read -r -p 'Run ./scripts/ensure_dirs.sh? [y/N]: ' run_ensure_dirs
+if [[ "$run_ensure_dirs" == "y" || "$run_ensure_dirs" == "Y" ]]; then
+  ensure_dirs_script="${repo_root}/scripts/ensure_dirs.sh"
+  if [[ -f "$ensure_dirs_script" ]]; then
+    echo "Running ./scripts/ensure_dirs.sh from ${repo_root}."
+    (cd "$repo_root" && ./scripts/ensure_dirs.sh)
+    echo "Finished running ./scripts/ensure_dirs.sh."
+  else
+    echo "ensure_dirs.sh not found at ${ensure_dirs_script}; skipping."
+  fi
+else
+  echo "Skipped running ./scripts/ensure_dirs.sh."
+fi
+
 read -r -p 'Copy scripts/ dir to $HOME/tools/scripts? [y/N]: ' copy_scripts
 if [[ "$copy_scripts" == "y" || "$copy_scripts" == "Y" ]]; then
   mkdir -p "$HOME/tools/scripts"
@@ -53,6 +81,62 @@ if [[ "$copy_scripts" == "y" || "$copy_scripts" == "Y" ]]; then
   echo "Copied scripts from ${repo_root}/scripts to $HOME/tools/scripts."
 else
   echo "Skipped copying scripts."
+fi
+
+read -r -p 'Run ./scripts/doctor.sh? [y/N]: ' run_doctor
+if [[ "$run_doctor" == "y" || "$run_doctor" == "Y" ]]; then
+  doctor_script="${repo_root}/scripts/doctor.sh"
+  if [[ -f "$doctor_script" ]]; then
+    echo "Running ./scripts/doctor.sh from ${repo_root}."
+    (cd "$repo_root" && ./scripts/doctor.sh)
+    echo "Finished running ./scripts/doctor.sh."
+  else
+    echo "doctor.sh not found at ${doctor_script}; skipping."
+  fi
+else
+  echo "Skipped running ./scripts/doctor.sh."
+fi
+
+read -r -p 'Run ./scripts/list_dotfiles.sh? [y/N]: ' run_list
+if [[ "$run_list" == "y" || "$run_list" == "Y" ]]; then
+  list_script="${repo_root}/scripts/list_dotfiles.sh"
+  if [[ -f "$list_script" ]]; then
+    echo "Running ./scripts/list_dotfiles.sh from ${repo_root}."
+    (cd "$repo_root" && ./scripts/list_dotfiles.sh)
+    echo "Finished running ./scripts/list_dotfiles.sh."
+  else
+    echo "list_dotfiles.sh not found at ${list_script}; skipping."
+  fi
+else
+  echo "Skipped running ./scripts/list_dotfiles.sh."
+fi
+
+read -r -p 'Run ./scripts/diff_dotfiles.sh? [y/N]: ' run_diff
+if [[ "$run_diff" == "y" || "$run_diff" == "Y" ]]; then
+  diff_script="${repo_root}/scripts/diff_dotfiles.sh"
+  if [[ -f "$diff_script" ]]; then
+    echo "Running ./scripts/diff_dotfiles.sh from ${repo_root}."
+    (cd "$repo_root" && ./scripts/diff_dotfiles.sh)
+    echo "Finished running ./scripts/diff_dotfiles.sh."
+  else
+    echo "diff_dotfiles.sh not found at ${diff_script}; skipping."
+  fi
+else
+  echo "Skipped running ./scripts/diff_dotfiles.sh."
+fi
+
+read -r -p 'Run ./scripts/update_plugins.sh? [y/N]: ' run_update_plugins
+if [[ "$run_update_plugins" == "y" || "$run_update_plugins" == "Y" ]]; then
+  update_plugins_script="${repo_root}/scripts/update_plugins.sh"
+  if [[ -f "$update_plugins_script" ]]; then
+    echo "Running ./scripts/update_plugins.sh from ${repo_root}."
+    (cd "$repo_root" && ./scripts/update_plugins.sh)
+    echo "Finished running ./scripts/update_plugins.sh."
+  else
+    echo "update_plugins.sh not found at ${update_plugins_script}; skipping."
+  fi
+else
+  echo "Skipped running ./scripts/update_plugins.sh."
 fi
 
 read -r -p 'Source ~/.zshrc now? [y/N]: ' source_zshrc
