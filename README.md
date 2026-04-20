@@ -45,9 +45,20 @@ This script performs the following actions in order:
 4. Prompts to copy `scripts/` into `$HOME/tools/scripts`.
 5. Prompts to source `~/.zshrc` immediately.
 
-### Alternative setup helper: `scripts/link.sh`
+### Alternative setup flow: `scripts/link.sh`
 
-`link.sh` is a symlink-based helper script, but it currently references a `home/` directory path that is not present in this repository. In its current form, it acts as a legacy helper and does not match the `dotfiles/` copy-based flow.
+Run from the repository root:
+
+```bash
+./scripts/link.sh
+```
+
+This script is the symlink-based setup option. It links supported files and directories from `dotfiles/` into `$HOME`:
+
+- Dotfiles: `.bashrc`, `.profile`, `.zshrc`, `.p10k.zsh`, `.gitconfig`
+- Config directories: `.config/nvim`, `.config/fastfetch`, `.config/ranger`
+
+Each link is only created when the source file or directory exists under `dotfiles/`.
 
 ## Script reference
 
@@ -94,7 +105,7 @@ Output filename format:
 
 ### `scripts/link.sh`
 
-Legacy symlink script intended to link dotfiles and `.config` entries into `$HOME`, but it still points to `home/` paths. It is retained in the repository but does not align with the current `dotfiles/` layout.
+Symlink-based setup helper that links selected files and `.config` entries from `dotfiles/` into `$HOME`.
 
 ## Dotfiles reference
 
