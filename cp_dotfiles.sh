@@ -32,6 +32,42 @@ else
 fi
 
 mkdir -p "$HOME"
+
+# Rescue git identity before the copy overwrites ~/.gitconfig.
+# The tracked .gitconfig is a neutral baseline; personal identity belongs in
+# ~/.gitconfig.local (already included by the tracked config).
+_rescue_git_identity() {
+  local src="$HOME/.gitconfig"
+  local local_cfg="$HOME/.gitconfig.local"
+
+  [[ -f "$src" ]] || return 0
+
+  local git_name git_email git_sigkey
+  git_name="$(git config --file "$src" user.name 2>/dev/null || true)"
+  git_email="$(git config --file "$src" user.email 2>/dev/null || true)"
+  git_sigkey="$(git config --file "$src" user.signingkey 2>/dev/null || true)"
+
+  [[ -n "$git_name" || -n "$git_email" ]] || return 0
+
+  local existing_name existing_email
+  existing_name="$(git config --file "$local_cfg" user.name 2>/dev/null || true)"
+  existing_email="$(git config --file "$local_cfg" user.email 2>/dev/null || true)"
+
+  if [[ -n "$existing_name" || -n "$existing_email" ]]; then
+    echo "Git identity already in ~/.gitconfig.local; skipping migration."
+    return 0
+  fi
+
+  echo "Migrating git identity to ~/.gitconfig.local..."
+  touch "$local_cfg"
+  [[ -n "$git_name" ]]   && git config --file "$local_cfg" user.name       "$git_name"   && echo "  user.name  = $git_name"
+  [[ -n "$git_email" ]]  && git config --file "$local_cfg" user.email      "$git_email"  && echo "  user.email = $git_email"
+  [[ -n "$git_sigkey" ]] && git config --file "$local_cfg" user.signingkey "$git_sigkey" && echo "  user.signingkey = $git_sigkey"
+  echo "Git identity saved to ~/.gitconfig.local."
+}
+
+_rescue_git_identity
+
 cp -a "${dotfiles_src}/." "$HOME/"
 echo "Copied dotfiles from ${dotfiles_src} to $HOME."
 
@@ -55,16 +91,18 @@ if [[ "$run_p10k_configure" =~ ^[Yy]$ ]]; then
     p10k configure || echo "p10k configure did not complete successfully; continuing."
   elif command -v zsh >/dev/null 2>&1 && [[ -f "$HOME/powerlevel10k/powerlevel10k.zsh-theme" ]]; then
     echo "Running p10k configure via zsh."
-    # zsh -i spawns an interactive child that takes full terminal ownership.
-    # In proot/Termux environments the TTY is not cleanly returned to the
-    # parent bash process on exit — both stdin and stdout can be left
-    # detached, causing "suspended (tty input/output)" on the next read.
-    # We re-attach both file descriptors to /dev/tty immediately after.
     zsh -i -c 'source "$HOME/powerlevel10k/powerlevel10k.zsh-theme" && p10k configure' \
       || echo "p10k configure via zsh did not complete successfully; continuing."
-    stty sane          2>/dev/null || true
-    exec  </dev/tty    2>/dev/null || true
-    exec 1>/dev/tty    2>/dev/null || true
+    # zsh -i takes full terminal ownership for p10k's TUI. In proot/Termux the
+    # parent bash process doesn't automatically get the TTY back on exit.
+    # The process receives SIGTTOU/SIGTIN when it next touches the terminal —
+    # which suspends it before any exec or stty can run.
+    # Fix: ignore those signals first, reclaim stdin+stdout, then restore.
+    trap '' TTOU TTIN 2>/dev/null || true
+    stty sane      2>/dev/null || true
+    exec </dev/tty  2>/dev/null || true
+    exec 1>/dev/tty 2>/dev/null || true
+    trap - TTOU TTIN 2>/dev/null || true
   else
     echo "Powerlevel10k is not available yet; skipping p10k configure."
   fi
