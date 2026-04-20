@@ -4,7 +4,10 @@ set -euo pipefail
 dirs=(
   "$HOME/tools"
   "$HOME/tools/scripts"
+  "$HOME/tools/scripts/axiom"
   "$HOME/.config"
+  "$HOME/.config/axiom"
+  "$HOME/.config/bluxgpt"
 )
 
 for dir_path in "${dirs[@]}"; do

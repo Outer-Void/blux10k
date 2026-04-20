@@ -1,6 +1,6 @@
 # blux10k
 
-`blux10k v1.0` is a stabilized, portable shell environment repository. It ships reusable dotfiles plus bootstrap/maintenance scripts for setup, validation, backup, sync, and symlink-based management.
+`blux10k v2.0` is a stabilized, portable shell environment repository. It ships reusable dotfiles plus bootstrap/maintenance scripts for setup, validation, backup, sync, and symlink-based management.
 
 ## Repository layout
 
@@ -20,6 +20,7 @@
 │   ├── diff_dotfiles.sh
 │   ├── doctor.sh
 │   ├── ensure_dirs.sh
+│   ├── check_version.sh
 │   ├── link.sh
 │   ├── list_dotfiles.sh
 │   ├── managed_entries.sh
@@ -84,7 +85,8 @@ Run from repository root:
 - `scripts/bootstrap-debian.sh` — Debian/Ubuntu bootstrap via `apt`, plus optional zplug/powerlevel10k setup
 - `scripts/update_plugins.sh` — update zplug plugins and powerlevel10k (if installed)
 - `scripts/doctor.sh` — non-destructive environment/tooling report
-- `scripts/ensure_dirs.sh` — ensure `$HOME/tools`, `$HOME/tools/scripts`, and `$HOME/.config`
+- `scripts/ensure_dirs.sh` — ensure `$HOME/tools`, `$HOME/tools/scripts`, `$HOME/tools/scripts/axiom`, `$HOME/.config`, `$HOME/.config/axiom`, and `$HOME/.config/bluxgpt`
+- `scripts/check_version.sh` — semantic-version gate utility for downstream checks against the repo `VERSION` file
 - `scripts/safe_zip.sh` — create `blux10k_safe_YYYYMMDD.zip` excluding common sensitive/cache/git artifacts (must be run from repository root, not from `$HOME`; does not exclude `~/.blux10k_backup`)
 - `scripts/activate_venv.sh` — source-only bash venv activator for `.venv`/`venv`
 - `scripts/py_venv.sh` — source-only POSIX helper to create/activate `.venv`
@@ -113,6 +115,15 @@ b10k --help
 
 to show the helper menu.
 
+`dotfiles/.zshrc` exports the following each shell session:
+
+```bash
+BLUX10K_VERSION=2.0.0
+BLUX10K_READY=1
+```
+
+`b10k version` (or `b10k --version` / `b10k -v`) prints the current blux10k version.
+
 If a helper script is missing, wrappers show the missing script name, expected path, and a fix hint to copy `scripts/` into `$HOME/tools/scripts`.
 
 Helper names:
@@ -125,7 +136,7 @@ Helper names:
 
 ## Dotfiles reference
 
-- `.zshrc` — zsh defaults, helper wrappers, plugin initialization, p10k loading, local override support
+- `.zshrc` — zsh defaults, helper wrappers, plugin initialization, p10k loading, blux10k readiness/version exports, and local override support
 - `.p10k.zsh` — tracked Powerlevel10k prompt configuration (generated from upstream `p10k configure` flow)
 - `.bashrc` — portable interactive bash defaults with guarded optional toolchain loading and local override support
 - `.profile` — portable login-shell PATH and guarded environment loading with local override support
@@ -152,7 +163,11 @@ This repository does not ship a custom Powerlevel10k theme framework.
   - source `scripts/reload_shell.sh`
   - `reload_shell.sh` must be sourced; executing it cannot reload a parent shell.
 - **Local overrides**: use untracked `.zshrc.local`, `.bashrc.local`, `.profile.local`, and `.gitconfig.local` for machine-specific settings.
+  - `.zshrc.local` remains the extension seam and is sourced at the bottom of `.zshrc`.
+- **AXIOM slot**: `$HOME/tools/scripts/axiom` is reserved for AXIOM script extensions.
+- **AXIOM config**: `$HOME/.config/axiom` is reserved for AXIOM config state.
+- **BluxGPT config**: `$HOME/.config/bluxgpt` is reserved for BluxGPT config state.
 
 ## Version
 
-Current release target: **blux10k v1.0**.
+Current release target: **blux10k v2.0**.
