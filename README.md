@@ -1,11 +1,6 @@
 # blux10k
 
-`blux10k` is a personal shell environment repository that stores dotfiles and helper shell scripts for setting up a terminal workflow.
-
-The repository is designed around two main pieces:
-
-- `dotfiles/`: user-level shell and Git configuration files intended to be copied into `$HOME`
-- `scripts/`: utility scripts for machine bootstrap, Python virtual environment activation, and packaging
+`blux10k` is a personal shell-environment repository. It stores user dotfiles in `dotfiles/` and provides helper scripts in `scripts/` for setup, backup/restore, validation, syncing, and shell workflow tasks.
 
 ## Repository layout
 
@@ -20,106 +15,153 @@ The repository is designed around two main pieces:
 │   └── .zshrc
 ├── scripts/
 │   ├── activate_venv.sh
+│   ├── backup_dotfiles.sh
 │   ├── bootstrap-debian.sh
+│   ├── diff_dotfiles.sh
+│   ├── doctor.sh
+│   ├── ensure_dirs.sh
 │   ├── link.sh
+│   ├── list_dotfiles.sh
 │   ├── py_venv.sh
-│   └── safe_zip.sh
+│   ├── reload_shell.sh
+│   ├── restore_dotfiles_backup.sh
+│   ├── safe_zip.sh
+│   ├── sync_dotfiles.sh
+│   ├── unlink.sh
+│   └── update_plugins.sh
 └── README.md
 ```
 
-## Setup
+## Setup methods
 
-### Preferred setup flow: `cp_dotfiles.sh`
+### A) Preferred setup flow: `cp_dotfiles.sh`
 
-Run from the repository root:
+Run from repository root:
 
 ```bash
 ./cp_dotfiles.sh
 ```
 
-This script performs the following actions in order:
+Prompt and action order:
 
-1. Copies all contents of `dotfiles/` into `$HOME` (`cp -a dotfiles/. "$HOME/"`).
-2. Prompts to run `./scripts/bootstrap-debian.sh`.
-3. Prompts to set `zsh` as the main shell (`chsh`) if `zsh` and `chsh` are available.
-4. Prompts to copy `scripts/` into `$HOME/tools/scripts`.
-5. Prompts to source `~/.zshrc` immediately.
+1. `Back up existing managed dotfiles before copy? [y/N]: `
+   - If `y`/`Y`, runs `./scripts/backup_dotfiles.sh` before copying.
+2. Copy step (always runs):
+   - Copies `dotfiles/.` into `$HOME/` using `cp -a`.
+3. `Run ./scripts/bootstrap-debian.sh? [y/N]: `
+4. `Set zsh as main shell? [y/N]: `
+5. `Run ./scripts/ensure_dirs.sh? [y/N]: `
+6. `Copy scripts/ dir to $HOME/tools/scripts? [y/N]: `
+7. `Run ./scripts/doctor.sh? [y/N]: `
+8. `Run ./scripts/list_dotfiles.sh? [y/N]: `
+9. `Run ./scripts/diff_dotfiles.sh? [y/N]: `
+10. `Run ./scripts/update_plugins.sh? [y/N]: `
+11. `Source ~/.zshrc now? [y/N]: `
 
-### Alternative setup flow: `scripts/link.sh`
+Notes:
+- `cp_dotfiles.sh` intentionally does **not** auto-run destructive/reversal utilities (`restore_dotfiles_backup.sh`, `sync_dotfiles.sh`, `unlink.sh`) and does not auto-run `reload_shell.sh`.
+- If a prompted script is missing, the flow prints a message and continues.
 
-Run from the repository root:
+### B) Alternative setup flow: `scripts/link.sh`
+
+Run from repository root:
 
 ```bash
 ./scripts/link.sh
 ```
 
-This script is the symlink-based setup option. It links supported files and directories from `dotfiles/` into `$HOME`:
+This is the symlink-based setup option. It links these managed targets (if source exists):
 
-- Dotfiles: `.bashrc`, `.profile`, `.zshrc`, `.p10k.zsh`, `.gitconfig`
-- Config directories: `.config/nvim`, `.config/fastfetch`, `.config/ranger`
+- Files to `$HOME`: `.bashrc`, `.profile`, `.zshrc`, `.p10k.zsh`, `.gitconfig`
+- Directories to `$HOME/.config`: `nvim`, `fastfetch`, `ranger`
 
-Each link is only created when the source file or directory exists under `dotfiles/`.
+`link.sh` uses `ln -sf`/`ln -sfn`, so existing targets at those paths may be replaced by symlinks.
 
 ## Script reference
 
-### `scripts/bootstrap-debian.sh`
+- `scripts/activate_venv.sh`
+  - Bash virtualenv activator. Must be **sourced**.
+  - Deactivates existing venv, activates `.venv` or `venv` in current directory, validates interpreter paths.
 
-Debian/Ubuntu bootstrap script that:
+- `scripts/bootstrap-debian.sh`
+  - Debian/Ubuntu bootstrap helper using `apt`.
+  - Installs terminal/dev packages and clones `~/.zplug` plus `~/powerlevel10k` when missing.
 
-- Runs `sudo apt update`
-- Installs terminal/dev packages (Git, Zsh, tmux, Neovim, ripgrep, fzf, build tools, etc.)
-- Clones `zplug` into `~/.zplug` if missing
-- Clones `powerlevel10k` into `~/powerlevel10k` if missing
+- `scripts/link.sh`
+  - Symlink-based dotfiles installer from this repo into `$HOME`.
 
-### `scripts/py_venv.sh`
+- `scripts/py_venv.sh`
+  - POSIX-shell virtualenv helper. Must be **sourced**.
+  - Creates `.venv` if missing, activates it, verifies interpreter resolution.
 
-Shell script that must be sourced. It:
+- `scripts/safe_zip.sh`
+  - Creates timestamped zip archives while excluding common sensitive/cache/venv/git paths.
 
-- Ensures `.venv` exists in the current directory (creates it via `python3 -m venv` if missing)
-- Activates `.venv`
-- Clears command hash caches
-- Verifies that `python` resolves to the activated `.venv`
+- `scripts/backup_dotfiles.sh`
+  - Backs up existing managed tracked targets from `$HOME` into `~/.blux10k_backup/<timestamp>/`.
+  - Only backs up paths that correspond to entries currently tracked under `dotfiles/`.
 
-### `scripts/activate_venv.sh`
+- `scripts/restore_dotfiles_backup.sh`
+  - Restores the latest backup from `~/.blux10k_backup/` back into `$HOME`.
+  - Keeps backup history in place.
 
-Bash script that must be sourced. It:
+- `scripts/sync_dotfiles.sh`
+  - Copies current tracked managed files from `$HOME` back into `dotfiles/`.
+  - Sync scope is limited to entries already tracked under `dotfiles/`.
 
-- Deactivates any currently active virtual environment
-- Searches for `.venv` first, then `venv` in the current directory
-- Activates the discovered environment
-- Verifies `VIRTUAL_ENV`, `python`, and `pip` resolve correctly
+- `scripts/doctor.sh`
+  - Read-only environment report for required/common tools and key paths.
+  - Reports present/missing status; does not auto-fix.
 
-### `scripts/safe_zip.sh`
+- `scripts/unlink.sh`
+  - Removes only symlinks in `$HOME` that point to this repo’s `dotfiles/` targets used by `link.sh`.
+  - Does not delete regular files.
 
-Creates a timestamped zip archive of the current directory while excluding common sensitive/ephemeral paths such as:
+- `scripts/list_dotfiles.sh`
+  - Lists all currently managed entries under `dotfiles/` (relative paths).
 
-- `.git/`
-- virtualenv directories
-- `.env` files
-- database files (`*.sqlite3`, `*.db`)
-- cache/log directories
+- `scripts/diff_dotfiles.sh`
+  - Compares each tracked `dotfiles/` entry with its corresponding `$HOME` path.
+  - Reports: missing in `$HOME`, identical, or different.
 
-Output filename format:
+- `scripts/reload_shell.sh`
+  - Attempts to source `~/.zshrc` or `~/.bashrc` based on detected shell context.
+  - For current-session impact, this script should be **sourced** (`source ./scripts/reload_shell.sh`).
 
-- `resolver_safe_YYYYMMDD.zip`
+- `scripts/ensure_dirs.sh`
+  - Ensures expected directories exist: `$HOME/tools`, `$HOME/tools/scripts`, `$HOME/.config`.
 
-### `scripts/link.sh`
-
-Symlink-based setup helper that links selected files and `.config` entries from `dotfiles/` into `$HOME`.
+- `scripts/update_plugins.sh`
+  - Updates optional shell components if present:
+    - `~/.zplug` (runs `zplug update` and `zplug install` via `zsh`)
+    - `~/powerlevel10k` (runs `git pull --ff-only` if it is a git repo)
+  - Missing optional components are reported and skipped.
 
 ## Dotfiles reference
 
-`dotfiles/` currently includes:
+Current tracked entries in `dotfiles/`:
 
-- `.bashrc`: interactive Bash behavior, history settings, completion, PATH and toolchain sourcing
-- `.profile`: login-shell environment setup and PATH initialization
-- `.zshrc`: Zsh setup including custom helper functions, plugin loading via `zplug`, completion, and Powerlevel10k theme loading
-- `.p10k.zsh`: Powerlevel10k prompt configuration generated by `p10k configure`
-- `.gitconfig`: Git identity/signing and credential helper settings
+- `.bashrc`
+- `.gitconfig`
+- `.p10k.zsh`
+- `.profile`
+- `.zshrc`
 
 ## Usage notes
 
-- `cp_dotfiles.sh` copies files into your home directory; it does not create symlinks.
-- The copy operation can overwrite existing files in `$HOME` with versions from `dotfiles/`.
-- `bootstrap-debian.sh` assumes a Debian-based system with `apt` and `sudo` available.
-- Virtual environment helper scripts are intended to be sourced, not executed directly.
+- **Copy vs symlink**:
+  - `cp_dotfiles.sh` copies files into `$HOME`.
+  - `scripts/link.sh` creates symlinks back to the repo.
+
+- **Backups**:
+  - `scripts/backup_dotfiles.sh` only stores managed tracked targets that already exist in `$HOME`.
+  - `scripts/restore_dotfiles_backup.sh` restores from the latest backup and does not remove backup history.
+
+- **Debian bootstrap assumption**:
+  - `scripts/bootstrap-debian.sh` expects a Debian/Ubuntu-like system with `apt` and `sudo`.
+
+- **Virtualenv helpers**:
+  - `scripts/activate_venv.sh` and `scripts/py_venv.sh` are intended to be sourced, not executed.
+
+- **Reload behavior**:
+  - `scripts/reload_shell.sh` cannot change a parent shell when run as a normal subprocess; source it when you need the current shell session updated.
