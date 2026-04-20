@@ -84,32 +84,6 @@ else
   echo "Skipped running ./scripts/bootstrap-debian.sh."
 fi
 
-read -r -p 'Run p10k configure now? [y/N]: ' run_p10k_configure
-if [[ "$run_p10k_configure" =~ ^[Yy]$ ]]; then
-  if command -v p10k >/dev/null 2>&1; then
-    echo "Running p10k configure."
-    p10k configure || echo "p10k configure did not complete successfully; continuing."
-  elif command -v zsh >/dev/null 2>&1 && [[ -f "$HOME/powerlevel10k/powerlevel10k.zsh-theme" ]]; then
-    echo "Running p10k configure via zsh."
-    zsh -i -c 'source "$HOME/powerlevel10k/powerlevel10k.zsh-theme" && p10k configure' \
-      || echo "p10k configure via zsh did not complete successfully; continuing."
-    # zsh -i takes full terminal ownership for p10k's TUI. In proot/Termux the
-    # parent bash process doesn't automatically get the TTY back on exit.
-    # The process receives SIGTTOU/SIGTIN when it next touches the terminal —
-    # which suspends it before any exec or stty can run.
-    # Fix: ignore those signals first, reclaim stdin+stdout, then restore.
-    trap '' TTOU TTIN 2>/dev/null || true
-    stty sane      2>/dev/null || true
-    exec </dev/tty  2>/dev/null || true
-    exec 1>/dev/tty 2>/dev/null || true
-    trap - TTOU TTIN 2>/dev/null || true
-  else
-    echo "Powerlevel10k is not available yet; skipping p10k configure."
-  fi
-else
-  echo "Skipped p10k configure."
-fi
-
 read -r -p 'Set zsh as main shell? [y/N]: ' set_main_shell
 if [[ "$set_main_shell" =~ ^[Yy]$ ]]; then
   if ! command -v zsh >/dev/null 2>&1; then
@@ -182,5 +156,12 @@ else
   echo "Skipped running ./scripts/update_plugins.sh."
 fi
 
-echo "Setup complete. To apply shell changes, start a new terminal session."
+echo
+echo "Setup complete."
+echo "To apply shell changes, start a new terminal session."
 echo "If you use zsh, you can also run: zsh"
+echo
+echo "Powerlevel10k was not configured automatically from this script."
+echo "To finish prompt setup, run:"
+echo "  p10k configure"
+echo
