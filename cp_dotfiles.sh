@@ -39,6 +39,12 @@ while (($#)); do
   esac
 done
 
+if [[ "$NONINTERACTIVE" -eq 1 ]]; then
+  echo "Running in --noninteractive mode (safe automation profile)."
+  echo "Defaults: backup=yes, bootstrap=no, set-shell=no, ensure-dirs=yes,"
+  echo "          copy-scripts=yes, doctor=no, list=no, diff=no, update-plugins=no."
+fi
+
 if [[ ! -d "$dotfiles_src" ]]; then
   echo "Error: dotfiles directory not found at ${dotfiles_src}."
   exit 1
@@ -64,6 +70,8 @@ ask_yes_no() {
   local answer
 
   if [[ "$NONINTERACTIVE" -eq 1 ]]; then
+    # Keep automation conservative for AXIOM usage: only low-risk, deterministic
+    # steps default to yes; optional/destructive/interactive steps default to no.
     echo "${prompt} [${default_choice}] -> ${default_choice} (noninteractive default)"
     [[ "$default_choice" == "y" ]]
     return
