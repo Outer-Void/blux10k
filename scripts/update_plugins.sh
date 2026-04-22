@@ -14,24 +14,18 @@ if [[ -d "$HOME/.zplug" ]]; then
 
     if [[ "$zplug_status" -eq 0 ]]; then
       if printf '%s' "$zplug_output" | grep -Eqi 'no packages to install|already up(\-| )to(\-| )date|up to date'; then
-        echo "zplug: already current (nothing to install)."
+        echo "zplug: already up to date."
       else
-        echo "zplug: updated successfully."
+        echo "zplug: plugins updated."
       fi
     else
-      if printf '%s' "$zplug_output" | grep -Eqi 'no packages to install|already up(\-| )to(\-| )date|up to date'; then
-        echo "zplug: no changes reported (non-zero status; review output if needed)."
-      elif printf '%s' "$zplug_output" | grep -Eqi 'error|failed|fatal|command not found|permission denied'; then
-        echo "zplug: update/install reported actionable issues (see output above)."
-      else
-        echo "zplug: update/install returned non-zero status (output may be informational)."
-      fi
+      echo "zplug: update failed (see output above)."
     fi
   else
-    echo "zplug: manager missing (need ~/.zplug/init.zsh and zsh); skipping."
+    echo "zplug: not installed (need ~/.zplug/init.zsh and zsh); skipping."
   fi
 else
-  echo "zplug: manager missing (~/.zplug not found); skipping."
+  echo "zplug: not installed (~/.zplug not found); skipping."
 fi
 
 if [[ -d "$HOME/powerlevel10k/.git" ]]; then

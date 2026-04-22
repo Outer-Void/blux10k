@@ -60,6 +60,8 @@ Prompt flow (in order):
 11. End-of-run reminder to open a new shell or run `zsh`
 12. End-of-run reminder to run `p10k configure` manually (interactive zsh session)
 
+Use this path for normal human setup when prompts are desired.
+
 ### B) Safe automation path (AXIOM-friendly): `./cp_dotfiles.sh --noninteractive`
 
 Run from repository root:
@@ -68,7 +70,7 @@ Run from repository root:
 ./cp_dotfiles.sh --noninteractive
 ```
 
-This mode is deterministic and has no prompts. Defaults are conservative and explicit:
+This mode is deterministic and has no prompts. It is intended for automation (including AXIOM use). Defaults are conservative and explicit:
 
 - `backup=yes`
 - `bootstrap=no`
@@ -80,9 +82,7 @@ This mode is deterministic and has no prompts. Defaults are conservative and exp
 - `diff=no`
 - `update-plugins=no`
 
-At runtime, `cp_dotfiles.sh --noninteractive` also prints these defaults before execution so automation logs clearly show the chosen safe path.
-
-This gives AXIOM a fail-safe stage-2 installer path without hidden hangs.
+At runtime, `cp_dotfiles.sh --noninteractive` prints these defaults before execution so logs clearly show the selected path.
 
 ### C) Alternative symlink setup: `./scripts/link.sh`
 
@@ -168,7 +168,8 @@ Helper names:
 
 - Theme source: upstream clone at `$HOME/powerlevel10k/powerlevel10k.zsh-theme`
 - Config source: tracked `~/.p10k.zsh`
-- Prompt wizard is manual: run `p10k configure` after installation from an interactive zsh session
+- `p10k configure` is **not** run automatically
+- Run `p10k configure` manually after installation from an interactive zsh session
 - `scripts/bootstrap-debian.sh` and `cp_dotfiles.sh` do **not** run `p10k configure` inline
 
 This repository does not ship a custom Powerlevel10k theme framework.
