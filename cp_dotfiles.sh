@@ -75,7 +75,7 @@ read -r -p 'Run ./scripts/bootstrap-debian.sh? [y/N]: ' run_bootstrap
 if [[ "$run_bootstrap" =~ ^[Yy]$ ]]; then
   if [[ -f "${scripts_dir}/bootstrap-debian.sh" ]]; then
     echo "Running ./scripts/bootstrap-debian.sh from ${repo_root}."
-    (cd "$repo_root" && BLUX10K_SKIP_P10K_CONFIG_PROMPT=1 ./scripts/bootstrap-debian.sh)
+    (cd "$repo_root" && ./scripts/bootstrap-debian.sh)
     echo "Finished ./scripts/bootstrap-debian.sh."
   else
     echo "Missing scripts/bootstrap-debian.sh; skipping."

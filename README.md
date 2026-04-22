@@ -50,15 +50,15 @@ Prompt flow (in order):
 1. Optional backup (`scripts/backup_dotfiles.sh`)
 2. Copy `dotfiles/` contents into `$HOME`
 3. Optional bootstrap (`scripts/bootstrap-debian.sh`)
-4. Optional `p10k configure`
-5. Optional set zsh as login shell
-6. Optional ensure expected directories (`scripts/ensure_dirs.sh`)
-7. Optional copy `scripts/` into `$HOME/tools/scripts`
-8. Optional environment doctor (`scripts/doctor.sh`)
-9. Optional managed-entry listing (`scripts/list_dotfiles.sh`)
-10. Optional managed-entry diff (`scripts/diff_dotfiles.sh`)
-11. Optional plugin updates (`scripts/update_plugins.sh`)
-12. End-of-run reminder to open a new shell or run `zsh`
+4. Optional set zsh as login shell
+5. Optional ensure expected directories (`scripts/ensure_dirs.sh`)
+6. Optional copy `scripts/` into `$HOME/tools/scripts`
+7. Optional environment doctor (`scripts/doctor.sh`)
+8. Optional managed-entry listing (`scripts/list_dotfiles.sh`)
+9. Optional managed-entry diff (`scripts/diff_dotfiles.sh`)
+10. Optional plugin updates (`scripts/update_plugins.sh`)
+11. End-of-run reminder to open a new shell or run `zsh`
+12. End-of-run reminder to run `p10k configure` manually
 
 `cp_dotfiles.sh` does not source `~/.zshrc` from bash and does not auto-run restore/sync/unlink flows.
 
@@ -82,7 +82,7 @@ Run from repository root:
 - `scripts/diff_dotfiles.sh` — compare managed entries in `dotfiles/` vs `$HOME`
 - `scripts/link.sh` — symlink managed entries into `$HOME`
 - `scripts/unlink.sh` — remove matching blux10k-managed symlinks from `$HOME`
-- `scripts/bootstrap-debian.sh` — Debian/Ubuntu bootstrap via `apt`, plus optional zplug/powerlevel10k setup
+- `scripts/bootstrap-debian.sh` — Debian/Ubuntu bootstrap via `apt`, plus zplug/powerlevel10k setup (no inline prompt wizard execution)
 - `scripts/update_plugins.sh` — update zplug plugins and powerlevel10k (if installed)
 - `scripts/doctor.sh` — non-destructive environment/tooling report
 - `scripts/ensure_dirs.sh` — ensure `$HOME/tools`, `$HOME/tools/scripts`, `$HOME/tools/scripts/axiom`, `$HOME/.config`, `$HOME/.config/axiom`, and `$HOME/.config/bluxgpt`
@@ -146,7 +146,7 @@ Helper names:
 
 - Theme source: upstream clone at `$HOME/powerlevel10k/powerlevel10k.zsh-theme`
 - Config source: tracked `~/.p10k.zsh`
-- Optional prompt wizard: `p10k configure` (available in `cp_dotfiles.sh` and `bootstrap-debian.sh`)
+- Prompt wizard is manual: run `p10k configure` after installation from an interactive zsh session
 
 This repository does not ship a custom Powerlevel10k theme framework.
 
