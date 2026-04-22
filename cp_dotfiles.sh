@@ -41,6 +41,7 @@ done
 
 if [[ "$NONINTERACTIVE" -eq 1 ]]; then
   echo "Running in --noninteractive mode (safe automation profile)."
+  echo "Policy: conservative automation defaults (only low-risk steps auto-run)."
   echo "Defaults: backup=yes, bootstrap=no, set-shell=no, ensure-dirs=yes,"
   echo "          copy-scripts=yes, doctor=no, list=no, diff=no, update-plugins=no."
 fi

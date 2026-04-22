@@ -20,9 +20,11 @@ if [[ -d "$HOME/.zplug" ]]; then
       fi
     else
       if printf '%s' "$zplug_output" | grep -Eqi 'no packages to install|already up(\-| )to(\-| )date|up to date'; then
-        echo "zplug: already current (non-zero status reported)."
+        echo "zplug: no changes reported (non-zero status; review output if needed)."
+      elif printf '%s' "$zplug_output" | grep -Eqi 'error|failed|fatal|command not found|permission denied'; then
+        echo "zplug: update/install reported actionable issues (see output above)."
       else
-        echo "zplug: update/install reported issues (see output above)."
+        echo "zplug: update/install returned non-zero status (output may be informational)."
       fi
     fi
   else
