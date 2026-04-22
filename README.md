@@ -80,6 +80,8 @@ This mode is deterministic and has no prompts. Defaults are conservative and exp
 - `diff=no`
 - `update-plugins=no`
 
+At runtime, `cp_dotfiles.sh --noninteractive` also prints these defaults before execution so automation logs clearly show the chosen safe path.
+
 This gives AXIOM a fail-safe stage-2 installer path without hidden hangs.
 
 ### C) Alternative symlink setup: `./scripts/link.sh`
@@ -167,6 +169,7 @@ Helper names:
 - Theme source: upstream clone at `$HOME/powerlevel10k/powerlevel10k.zsh-theme`
 - Config source: tracked `~/.p10k.zsh`
 - Prompt wizard is manual: run `p10k configure` after installation from an interactive zsh session
+- `scripts/bootstrap-debian.sh` and `cp_dotfiles.sh` do **not** run `p10k configure` inline
 
 This repository does not ship a custom Powerlevel10k theme framework.
 
