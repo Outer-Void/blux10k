@@ -37,7 +37,7 @@
 
 ## Setup methods
 
-### A) Preferred guided setup: `./cp_dotfiles.sh`
+### A) Interactive guided setup (human-first): `./cp_dotfiles.sh`
 
 Run from repository root:
 
@@ -58,11 +58,31 @@ Prompt flow (in order):
 9. Optional managed-entry diff (`scripts/diff_dotfiles.sh`)
 10. Optional plugin updates (`scripts/update_plugins.sh`)
 11. End-of-run reminder to open a new shell or run `zsh`
-12. End-of-run reminder to run `p10k configure` manually
+12. End-of-run reminder to run `p10k configure` manually (interactive zsh session)
 
-`cp_dotfiles.sh` does not source `~/.zshrc` from bash and does not auto-run restore/sync/unlink flows.
+### B) Safe automation path (AXIOM-friendly): `./cp_dotfiles.sh --noninteractive`
 
-### B) Alternative symlink setup: `./scripts/link.sh`
+Run from repository root:
+
+```bash
+./cp_dotfiles.sh --noninteractive
+```
+
+This mode is deterministic and has no prompts. Defaults are conservative and explicit:
+
+- `backup=yes`
+- `bootstrap=no`
+- `set-shell=no`
+- `ensure-dirs=yes`
+- `copy-scripts=yes` (installs helper scripts into `$HOME/tools/scripts`)
+- `doctor=no`
+- `list=no`
+- `diff=no`
+- `update-plugins=no`
+
+This gives AXIOM a fail-safe stage-2 installer path without hidden hangs.
+
+### C) Alternative symlink setup: `./scripts/link.sh`
 
 Run from repository root:
 
@@ -82,7 +102,7 @@ Run from repository root:
 - `scripts/diff_dotfiles.sh` — compare managed entries in `dotfiles/` vs `$HOME`
 - `scripts/link.sh` — symlink managed entries into `$HOME`
 - `scripts/unlink.sh` — remove matching blux10k-managed symlinks from `$HOME`
-- `scripts/bootstrap-debian.sh` — Debian/Ubuntu bootstrap via `apt`, plus zplug/powerlevel10k setup (no inline prompt wizard execution)
+- `scripts/bootstrap-debian.sh` — Debian/Ubuntu bootstrap via `apt`, plus zplug/powerlevel10k setup (does not run `p10k configure`)
 - `scripts/update_plugins.sh` — update zplug plugins and powerlevel10k (if installed)
 - `scripts/doctor.sh` — non-destructive environment/tooling report
 - `scripts/ensure_dirs.sh` — ensure `$HOME/tools`, `$HOME/tools/scripts`, `$HOME/tools/scripts/axiom`, `$HOME/.config`, `$HOME/.config/axiom`, and `$HOME/.config/bluxgpt`

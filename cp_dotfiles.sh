@@ -5,6 +5,40 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 dotfiles_src="${repo_root}/dotfiles"
 scripts_dir="${repo_root}/scripts"
 
+NONINTERACTIVE=0
+
+usage() {
+  cat <<'EOF'
+Usage: ./cp_dotfiles.sh [--noninteractive] [--help]
+
+Options:
+  --noninteractive   Run with safe defaults and no prompts.
+  --help             Show this help text.
+
+Noninteractive defaults:
+  backup=yes, bootstrap=no, set-shell=no, ensure-dirs=yes,
+  copy-scripts=yes, doctor=no, list=no, diff=no, update-plugins=no
+EOF
+}
+
+while (($#)); do
+  case "$1" in
+    --noninteractive)
+      NONINTERACTIVE=1
+      shift
+      ;;
+    --help|-h)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown argument: $1"
+      usage
+      exit 1
+      ;;
+  esac
+done
+
 if [[ ! -d "$dotfiles_src" ]]; then
   echo "Error: dotfiles directory not found at ${dotfiles_src}."
   exit 1
@@ -24,8 +58,27 @@ run_repo_script() {
   echo "Finished ${rel_script}."
 }
 
-read -r -p 'Back up existing managed dotfiles before copy? [y/N]: ' run_backup
-if [[ "$run_backup" =~ ^[Yy]$ ]]; then
+ask_yes_no() {
+  local prompt="$1"
+  local default_choice="$2"
+  local answer
+
+  if [[ "$NONINTERACTIVE" -eq 1 ]]; then
+    echo "${prompt} [${default_choice}] -> ${default_choice} (noninteractive default)"
+    [[ "$default_choice" == "y" ]]
+    return
+  fi
+
+  if [[ "$default_choice" == "y" ]]; then
+    read -r -p "${prompt} [Y/n]: " answer
+    [[ ! "$answer" =~ ^[Nn]$ ]]
+  else
+    read -r -p "${prompt} [y/N]: " answer
+    [[ "$answer" =~ ^[Yy]$ ]]
+  fi
+}
+
+if ask_yes_no 'Back up existing managed dotfiles before copy?' 'y'; then
   run_repo_script "scripts/backup_dotfiles.sh"
 else
   echo "Skipped backup before copy."
@@ -71,8 +124,7 @@ _rescue_git_identity
 cp -a "${dotfiles_src}/." "$HOME/"
 echo "Copied dotfiles from ${dotfiles_src} to $HOME."
 
-read -r -p 'Run ./scripts/bootstrap-debian.sh? [y/N]: ' run_bootstrap
-if [[ "$run_bootstrap" =~ ^[Yy]$ ]]; then
+if ask_yes_no 'Run ./scripts/bootstrap-debian.sh?' 'n'; then
   if [[ -f "${scripts_dir}/bootstrap-debian.sh" ]]; then
     echo "Running ./scripts/bootstrap-debian.sh from ${repo_root}."
     (cd "$repo_root" && ./scripts/bootstrap-debian.sh)
@@ -84,8 +136,7 @@ else
   echo "Skipped running ./scripts/bootstrap-debian.sh."
 fi
 
-read -r -p 'Set zsh as main shell? [y/N]: ' set_main_shell
-if [[ "$set_main_shell" =~ ^[Yy]$ ]]; then
+if ask_yes_no 'Set zsh as main shell?' 'n'; then
   if ! command -v zsh >/dev/null 2>&1; then
     echo "zsh is not installed; cannot set it as main shell."
   elif ! command -v chsh >/dev/null 2>&1; then
@@ -108,15 +159,13 @@ else
   echo "Skipped setting zsh as main shell."
 fi
 
-read -r -p 'Run ./scripts/ensure_dirs.sh? [y/N]: ' run_ensure_dirs
-if [[ "$run_ensure_dirs" =~ ^[Yy]$ ]]; then
+if ask_yes_no 'Run ./scripts/ensure_dirs.sh?' 'y'; then
   run_repo_script "scripts/ensure_dirs.sh"
 else
   echo "Skipped running ./scripts/ensure_dirs.sh."
 fi
 
-read -r -p 'Copy scripts/ dir to $HOME/tools/scripts? [y/N]: ' copy_scripts
-if [[ "$copy_scripts" =~ ^[Yy]$ ]]; then
+if ask_yes_no 'Copy scripts/ dir to $HOME/tools/scripts?' 'y'; then
   if [[ ! -d "$scripts_dir" ]]; then
     echo "Missing scripts directory at ${scripts_dir}; skipping copy."
   else
@@ -128,29 +177,25 @@ else
   echo "Skipped copying scripts."
 fi
 
-read -r -p 'Run ./scripts/doctor.sh? [y/N]: ' run_doctor
-if [[ "$run_doctor" =~ ^[Yy]$ ]]; then
+if ask_yes_no 'Run ./scripts/doctor.sh?' 'n'; then
   run_repo_script "scripts/doctor.sh"
 else
   echo "Skipped running ./scripts/doctor.sh."
 fi
 
-read -r -p 'Run ./scripts/list_dotfiles.sh? [y/N]: ' run_list
-if [[ "$run_list" =~ ^[Yy]$ ]]; then
+if ask_yes_no 'Run ./scripts/list_dotfiles.sh?' 'n'; then
   run_repo_script "scripts/list_dotfiles.sh"
 else
   echo "Skipped running ./scripts/list_dotfiles.sh."
 fi
 
-read -r -p 'Run ./scripts/diff_dotfiles.sh? [y/N]: ' run_diff
-if [[ "$run_diff" =~ ^[Yy]$ ]]; then
+if ask_yes_no 'Run ./scripts/diff_dotfiles.sh?' 'n'; then
   run_repo_script "scripts/diff_dotfiles.sh"
 else
   echo "Skipped running ./scripts/diff_dotfiles.sh."
 fi
 
-read -r -p 'Run ./scripts/update_plugins.sh? [y/N]: ' run_update_plugins
-if [[ "$run_update_plugins" =~ ^[Yy]$ ]]; then
+if ask_yes_no 'Run ./scripts/update_plugins.sh?' 'n'; then
   run_repo_script "scripts/update_plugins.sh"
 else
   echo "Skipped running ./scripts/update_plugins.sh."
@@ -161,7 +206,6 @@ echo "Setup complete."
 echo "To apply shell changes, start a new terminal session."
 echo "If you use zsh, you can also run: zsh"
 echo
-echo "Powerlevel10k was not configured automatically from this script."
-echo "To finish prompt setup, run:"
+echo "Run this manually from an interactive zsh session:"
 echo "  p10k configure"
 echo
