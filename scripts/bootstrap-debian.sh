@@ -62,22 +62,7 @@ if [[ ! -d "$HOME/powerlevel10k" ]]; then
   git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$HOME/powerlevel10k"
 fi
 
-if [[ "${BLUX10K_SKIP_P10K_CONFIG_PROMPT:-0}" != "1" ]]; then
-  read -r -p 'Run p10k configure now? [y/N]: ' run_p10k_configure
-  if [[ "$run_p10k_configure" =~ ^[Yy]$ ]]; then
-    if command -v p10k >/dev/null 2>&1; then
-      echo "Running p10k configure."
-      p10k configure || echo "p10k configure did not complete successfully; continuing."
-    elif command -v zsh >/dev/null 2>&1 && [[ -f "$HOME/powerlevel10k/powerlevel10k.zsh-theme" ]]; then
-      echo "Running p10k configure via zsh."
-      zsh -i -c 'source "$HOME/powerlevel10k/powerlevel10k.zsh-theme" && p10k configure' \
-        || echo "p10k configure via zsh did not complete successfully; continuing."
-    else
-      echo "p10k command is not available yet. Open zsh and run: p10k configure"
-    fi
-  else
-    echo "Skipped p10k configure."
-  fi
-fi
-
 echo "Bootstrap complete."
+echo "Powerlevel10k was not configured automatically from this script."
+echo "To finish prompt setup, run:"
+echo "  p10k configure"
