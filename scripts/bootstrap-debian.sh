@@ -63,6 +63,5 @@ if [[ ! -d "$HOME/powerlevel10k" ]]; then
 fi
 
 echo "Bootstrap complete."
-echo "Powerlevel10k was not configured automatically from this script."
-echo "To finish prompt setup, run:"
+echo "Run this manually from an interactive zsh session:"
 echo "  p10k configure"

@@ -14,22 +14,18 @@ if [[ -d "$HOME/.zplug" ]]; then
 
     if [[ "$zplug_status" -eq 0 ]]; then
       if printf '%s' "$zplug_output" | grep -Eqi 'no packages to install|already up(\-| )to(\-| )date'; then
-        echo "zplug is already current."
+        echo "zplug: already current (nothing to install)."
       else
-        echo "zplug plugins updated."
+        echo "zplug: updated successfully."
       fi
     else
-      if printf '%s' "$zplug_output" | grep -Eqi 'no packages to install'; then
-        echo "zplug is already current."
-      else
-        echo "zplug update failed; continuing."
-      fi
+      echo "zplug: update command failed."
     fi
   else
-    echo "~/.zplug exists, but zsh or ~/.zplug/init.zsh is missing (missing manager); skipping zplug update."
+    echo "zplug: manager missing (need ~/.zplug/init.zsh and zsh); skipping."
   fi
 else
-  echo "~/.zplug not found (missing manager); skipping zplug update."
+  echo "zplug: manager missing (~/.zplug not found); skipping."
 fi
 
 if [[ -d "$HOME/powerlevel10k/.git" ]]; then
@@ -42,15 +38,15 @@ if [[ -d "$HOME/powerlevel10k/.git" ]]; then
 
   if [[ "$p10k_status" -eq 0 ]]; then
     if printf '%s' "$p10k_output" | grep -Eqi 'already up[ -]to[ -]date'; then
-      echo "powerlevel10k is already current."
+      echo "powerlevel10k: already current."
     else
-      echo "powerlevel10k updated."
+      echo "powerlevel10k: updated successfully."
     fi
   else
-    echo "powerlevel10k update failed; continuing."
+    echo "powerlevel10k: update command failed."
   fi
 elif [[ -d "$HOME/powerlevel10k" ]]; then
-  echo "~/powerlevel10k exists but is not a git repository (missing manager); skipping update."
+  echo "powerlevel10k: repo missing (.git not found); skipping."
 else
-  echo "~/powerlevel10k not found (missing manager); skipping update."
+  echo "powerlevel10k: repo missing (~/powerlevel10k not found); skipping."
 fi
