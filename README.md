@@ -195,3 +195,11 @@ This repository does not ship a custom Powerlevel10k theme framework.
 ## Version
 
 Current release target: **blux10k v2.0**.
+
+## License
+
+**Outer-Void Proprietary License** (proprietary). Copyright (c) 2026 Outer-Void / Justadudeinspace (JADIS). All rights reserved. See [LICENSE](LICENSE).
+
+Third-party components keep their own licenses; see [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES.md) and `licenses/`.
+
+Contact: outervoid.blux@gmail.com (main) · theoutervoid@outlook.com (fallback)

@@ -1,6 +1,6 @@
 # Third-party notices: blux10k
 
-Outer Void portions are proprietary by default (no open licence is granted). The file below derives from a third-party template.
+Outer Void portions are under the Outer-Void Proprietary License (see `LICENSE`). The file below derives from a third-party template.
 
 | Component | Licence | Copyright / notice | Licence text | Distributed in |
 |---|---|---|---|---|
