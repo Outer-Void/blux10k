@@ -2,6 +2,23 @@
 
 `blux10k v2.0` is a stabilized, portable shell environment repository. It ships reusable dotfiles plus bootstrap/maintenance scripts for setup, validation, backup, sync, and symlink-based management.
 
+## `blux10k` CLI (environment and toolchain authority)
+
+```sh
+bin/blux10k detect              # OS, architecture, libc (glibc/bionic), Termux, PRoot, container, WSL
+bin/blux10k inventory           # Python, pip, Node, npm, JDK, Gradle, adb, git, zsh, Docker, uv, gh, rustc
+bin/blux10k check android jdk   # groups: python node jdk gradle android termux docker git
+bin/blux10k verify              # managed dotfiles + required tools
+bin/blux10k report --json       # full diagnostic report (contract blux10k.report)
+bin/blux10k doctor              # verdict: exit 0 healthy, 1 problems
+bin/blux10k bootstrap           # shows the plan; changes nothing without --apply
+```
+
+- **Read-only by default.** Only `bootstrap --apply` runs anything, and only this repository's own scripts.
+- **No side effects from probes.** Version probes run with a throwaway HOME, so tools such as `adb` and
+  `gradle` cannot create `~/.android` or `~/.gradle`.
+- **Routing.** `ax env` routes here (Stage 18).
+
 ## Repository layout
 
 ```text
