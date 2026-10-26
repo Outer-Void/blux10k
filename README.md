@@ -1,6 +1,6 @@
 # blux10k
 
-`blux10k v2.0` is a stabilized, portable shell environment repository. It ships reusable dotfiles plus bootstrap/maintenance scripts for setup, validation, backup, sync, and symlink-based management.
+blux10k (version **3.0.0**: `VERSION` and `bin/blux10k --version`) is a stabilized, portable shell environment repository and the Outer Void environment/toolchain authority (`ax env`). It ships reusable dotfiles plus bootstrap/maintenance scripts for setup, validation, backup, sync, and symlink-based management.
 
 ## `blux10k` CLI (environment and toolchain authority)
 
@@ -157,7 +157,7 @@ to show the helper menu.
 `dotfiles/.zshrc` exports the following each shell session:
 
 ```bash
-BLUX10K_VERSION=2.0.0
+BLUX10K_VERSION=2.0.0   # stale: the dotfile still exports 2.0.0; `VERSION` (3.0.0) is authoritative
 BLUX10K_READY=1
 ```
 
@@ -211,7 +211,7 @@ This repository does not ship a custom Powerlevel10k theme framework.
 
 ## Version
 
-Current release target: **blux10k v2.0**.
+Current version: **3.0.0** (`VERSION`; `bin/blux10k --version`). Not released or tagged. `dotfiles/.zshrc` still exports `BLUX10K_VERSION=2.0.0`; that mismatch is recorded in [Outer-Void/docs ecosystem findings](https://github.com/Outer-Void/docs/blob/main/ecosystem/findings.md).
 
 ## License
 
