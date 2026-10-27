@@ -157,7 +157,7 @@ to show the helper menu.
 `dotfiles/.zshrc` exports the following each shell session:
 
 ```bash
-BLUX10K_VERSION=2.0.0   # stale: the dotfile still exports 2.0.0; `VERSION` (3.0.0) is authoritative
+BLUX10K_VERSION=3.0.0   # aligned with the authoritative `VERSION` file
 BLUX10K_READY=1
 ```
 
@@ -211,7 +211,7 @@ This repository does not ship a custom Powerlevel10k theme framework.
 
 ## Version
 
-Current version: **3.0.0** (`VERSION`; `bin/blux10k --version`). Not released or tagged. `dotfiles/.zshrc` still exports `BLUX10K_VERSION=2.0.0`; that mismatch is recorded in [Outer-Void/docs ecosystem findings](https://github.com/Outer-Void/docs/blob/main/ecosystem/findings.md).
+Current version: **3.0.0** (`VERSION`; `bin/blux10k --version`). Not released or tagged. `dotfiles/.zshrc` exports the same `BLUX10K_VERSION=3.0.0`.
 
 ## License
 

@@ -20,7 +20,7 @@ case ":$PATH:" in
   *) export PATH="$LOCAL_TOOL_SCRIPTS:$PATH" ;;
 esac
 
-BLUX10K_VERSION="2.0.0"
+BLUX10K_VERSION="3.0.0"
 export BLUX10K_VERSION
 export BLUX10K_READY=1
 
